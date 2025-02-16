@@ -1,14 +1,44 @@
 import * as vscode from 'vscode';
 import OpenAI from "openai";
+import { readdirSync, statSync } from 'fs';
+import { join } from 'path';
 
-// 1) Keep a conversation array at the top-level (global) scope
+// 1) Keep a global conversation array
 let conversation: Array<{ role: "user" | "assistant"; content: string }> = [];
 
+// Use your real key or environment variable
 const openai = new OpenAI({ apiKey: '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' });
 
+// Helper function to get folder structure
+function getFolderStructure(folderPath: string, maxDepth = 2, currentDepth = 0): any {
+  if (currentDepth > maxDepth) {
+    return {};
+  }
+  const structure: any = {};
+  const items = readdirSync(folderPath);
+
+  for (const item of items) {
+    // Skip node_modules
+    if (item === 'node_modules') {
+      continue;
+    }
+
+    const itemPath = join(folderPath, item);
+    const stats = statSync(itemPath);
+
+    if (stats.isDirectory()) {
+      structure[item] = getFolderStructure(itemPath, maxDepth, currentDepth + 1);
+    } else {
+      structure[item] = "file";
+    }
+  }
+  return structure;
+}
+
+
 export function activate(context: vscode.ExtensionContext) {
-  let disposable = vscode.commands.registerCommand('extension.bettercontextoai', async () => {
-    // Prompt user for a message
+  // Command 1: Regular Chat
+  let chatCommand = vscode.commands.registerCommand('extension.bettercontextoai', async () => {
     const userInput = await vscode.window.showInputBox({
       placeHolder: 'Enter your message for OpenAI'
     });
@@ -17,23 +47,20 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    // 2) Add the new user message to the conversation
+    // Add user message
     conversation.push({ role: "user", content: userInput });
 
     try {
-      // 3) Send the entire conversation each time
+      // Send entire conversation each time
       const response = await openai.chat.completions.create({
         model: "o1-mini", // or "gpt-3.5-turbo", etc.
-        messages: conversation,
-        // store: true, // "store" is optional/experimental in some libraries
+        messages: conversation
       });
 
       const assistantReply = response.choices[0]?.message?.content ?? '';
-      
-      // 4) Add the assistant's response to the conversation
+      // Add assistant reply to conversation
       conversation.push({ role: "assistant", content: assistantReply });
 
-      // Show the response
       vscode.window.showInformationMessage(`OpenAI says: ${assistantReply}`);
       console.log('Full reply:', JSON.stringify(response));
     } catch (error: any) {
@@ -42,7 +69,57 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  context.subscriptions.push(disposable);
+  // Command 2: Generate Project Summary
+  let projectSummaryCommand = vscode.commands.registerCommand('extension.generateProjectSummary', async () => {
+    // Make sure there's a workspace folder
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+      vscode.window.showErrorMessage('No workspace folder found.');
+      return;
+    }
+
+    // Read the folder structure (limit depth to 2 to avoid huge JSON)
+    const rootPath = workspaceFolders[0].uri.fsPath;
+    const structure = getFolderStructure(rootPath, 2);
+
+    // Add user message with structure
+    conversation.push({
+      role: "user",
+      content: `Here is the project structure in JSON (depth 2):\n${JSON.stringify(structure, null, 2)}\n\n` +
+               `Please create a .md file describing each folder/file responsibility.`
+    });
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: "o1-mini",
+        messages: conversation
+      });
+
+      const assistantReply = response.choices[0]?.message?.content ?? '';
+      // Add assistant reply to conversation
+      conversation.push({ role: "assistant", content: assistantReply });
+
+      // Open the .md text in a new editor
+      const doc = await vscode.workspace.openTextDocument({
+        content: assistantReply,
+        language: "markdown"
+      });
+      await vscode.window.showTextDocument(doc);
+
+      // Or optionally write to a file:
+      // import { writeFileSync } from 'fs';
+      // const mdPath = join(rootPath, "PROJECT_SUMMARY.md");
+      // writeFileSync(mdPath, assistantReply, "utf8");
+      // vscode.window.showInformationMessage(`Saved project summary to ${mdPath}`);
+
+    } catch (error: any) {
+      vscode.window.showErrorMessage(`Error calling OpenAI API: ${error?.message}`);
+      console.error(error);
+    }
+  });
+
+  // Register both commands
+  context.subscriptions.push(chatCommand, projectSummaryCommand);
 }
 
 export function deactivate() {}
