@@ -17,9 +17,10 @@ function getFolderStructure(folderPath: string, maxDepth = 2, currentDepth = 0):
   const structure: any = {};
   const items = readdirSync(folderPath);
 
+  const foldersAndFilesToAvoid = ['.git', 'node_modules', 'dist', 'build', '.gitignore', 'yarn.lock'];
   for (const item of items) {
     // Skip node_modules
-    if (item === 'node_modules') {
+    if (foldersAndFilesToAvoid.includes(item) || item?.includes('test')) {
       continue;
     }
 
@@ -80,13 +81,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Read the folder structure (limit depth to 2 to avoid huge JSON)
     const rootPath = workspaceFolders[0].uri.fsPath;
-    const structure = getFolderStructure(rootPath, 2);
+    const structure = getFolderStructure(rootPath, 4);
 
     // Add user message with structure
     conversation.push({
       role: "user",
       content: `Here is the project structure in JSON (depth 2):\n${JSON.stringify(structure, null, 2)}\n\n` +
-               `Please create a .md file describing each folder/file responsibility.`
+               `Please analyze this whole project, then create a .md that shows the project folder structure while describing each folder/file responsibility.`
     });
 
     try {
