@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import OpenAI from "openai";
 import { readdirSync, statSync, readFileSync, writeFileSync, existsSync, lstatSync } from 'fs';
-import { join, normalize } from 'path';
+import { extname, join, normalize } from 'path';
 
 // models: gpt-4o-mini, o1-mini
 
@@ -13,6 +13,9 @@ const openai = new OpenAI({ apiKey: 'sk-proj-gbHZOW5C1iMUp5Bng9kHFMcx6Il1UIXKej4
 
 // Helper function to get folder structure + file contents
 function getFolderStructure(folderPath: string, maxDepth = 2, currentDepth = 0): any {
+  console.log('Max depth:', maxDepth);
+  console.log('Current depth:', currentDepth);
+
   if (currentDepth > maxDepth) {
     return {};
   }
@@ -31,7 +34,9 @@ function getFolderStructure(folderPath: string, maxDepth = 2, currentDepth = 0):
     '.yarnrc',
     '.pdf',
     '.png',
-    '.exe'
+    '.exe',
+    '.ico',
+    '.txt'
   ];
   // Limit file size to avoid very large payloads
   const MAX_FILE_SIZE = 50 * 1024; // 50 KB
@@ -76,60 +81,73 @@ function getFolderStructure(folderPath: string, maxDepth = 2, currentDepth = 0):
 
 function getFolderStructure2(folderPath: string, maxDepth = 2, currentDepth = 0, targetFolder = 'src'): any {
   if (currentDepth > maxDepth) {
-      return {};
+    return {};
   }
 
   const structure: any = {};
 
   try {
-      if (!existsSync(folderPath)) {
-          console.error("Folder does not exist:", folderPath);
-          return {}; // Or throw an error if you prefer
-      }
-
-      const items = readdirSync(folderPath);
-
-      const foldersAndFilesToAvoid = [
-        '.git', 
-        'node_modules', 
-        'dist', 
-        'build', 
-        'yarn.lock',
-        'package-lock.json',
-        '.yarnrc',
-        '.pdf',
-        '.png',
-        '.exe'
-      ];
-      const MAX_FILE_SIZE = 50 * 1024;
-
-      for (const item of items) {
-          const itemPath = join(folderPath, item);
-          const stats = lstatSync(itemPath); // Use lstatSync
-
-          if (foldersAndFilesToAvoid.includes(item) || item.includes('test') || item.includes('ignore') || item.includes('.spec') || item.includes('.md')) {
-              continue;
-          }
-
-          if (stats.isDirectory()) {
-              structure[item] = getFolderStructure2(itemPath, maxDepth, currentDepth + 1, targetFolder);
-          } else {
-              if (stats.size <= MAX_FILE_SIZE) {
-                  try {
-                      const content = readFileSync(itemPath, 'utf8');
-                      structure[item] = { type: 'file', content, path: itemPath };
-                  } catch (err) {
-                      console.error("Error reading file:", itemPath, err);
-                      structure[item] = { type: 'file', content: '[Error reading file]', path: itemPath };
-                  }
-              } else {
-                  structure[item] = { type: 'file', content: '[File too large, omitted]', path: itemPath };
-              }
-          }
-      }
-  } catch (err) {
-      console.error("Error reading directory:", folderPath, err);
+    if (!existsSync(folderPath)) {
+      console.error("Folder does not exist:", folderPath);
       return {};
+    }
+
+    const items = readdirSync(folderPath);
+
+    // List of names to avoid (for folders or file names that exactly match)
+    const foldersAndFilesToAvoid = [
+      '.git',
+      'node_modules',
+      'dist',
+      'build',
+      'yarn.lock',
+      'package-lock.json',
+      '.yarnrc'
+    ];
+    // List of file extensions for which to omit file content
+    const omitContentExtensions = ['.pdf', '.png', '.exe', '.ico', '.txt'];
+    // Limit file size to avoid very large payloads
+    const MAX_FILE_SIZE = 50 * 1024;
+
+    for (const item of items) {
+      const itemPath = join(folderPath, item);
+      const stats = lstatSync(itemPath);
+
+      // Skip ignored items or those containing test/ignore/spec/md in the name
+      if (foldersAndFilesToAvoid.includes(item) ||
+          item.includes('test') ||
+          item.includes('ignore') ||
+          item.includes('.spec') ||
+          item.includes('.md')) {
+        continue;
+      }
+
+      if (stats.isDirectory()) {
+        structure[item] = getFolderStructure2(itemPath, maxDepth, currentDepth + 1, targetFolder);
+      } else {
+        // Check file extension
+        const fileExt = extname(item).toLowerCase();
+        if (stats.size <= MAX_FILE_SIZE) {
+          // If the file extension is in the omit list, do not read its content.
+          if (omitContentExtensions.includes(fileExt)) {
+            structure[item] = { type: 'file', content: '[Content omitted]', path: itemPath };
+          } else {
+            try {
+              const content = readFileSync(itemPath, 'utf8');
+              structure[item] = { type: 'file', content, path: itemPath };
+            } catch (err) {
+              console.error("Error reading file:", itemPath, err);
+              structure[item] = { type: 'file', content: '[Error reading file]', path: itemPath };
+            }
+          }
+        } else {
+          structure[item] = { type: 'file', content: '[File too large, omitted]', path: itemPath };
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error reading directory:", folderPath, err);
+    return {};
   }
 
   return structure;
@@ -266,6 +284,7 @@ Now, please generate the Markdown document following these instructions.`
   }
 });
 
+// Command 3: Generate File Content Map
 let fileContentMapCommand = vscode.commands.registerCommand('extension.generateFileContentMap', async () => {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) {
@@ -276,7 +295,7 @@ let fileContentMapCommand = vscode.commands.registerCommand('extension.generateF
   const rootPath = workspaceFolders[0].uri.fsPath;
   console.log("Root Path:", rootPath);
 
-  // Use getFolderStructure2 to get the directory structure
+  // Use the modified getFolderStructure2 function
   const structure = getFolderStructure2(rootPath, 10, 0, 'src');
   console.log("Structure:", JSON.stringify(structure, null, 2));
 
@@ -287,11 +306,9 @@ let fileContentMapCommand = vscode.commands.registerCommand('extension.generateF
       const item = data[key];
       if (item && item.type === 'file' && item.path) {
         const normalizedPath = normalize(item.path);
-        // Convert Windows backslashes to forward slashes
         const forwardPath = normalizedPath.replace(/\\/g, "/");
         console.log("Considering file:", forwardPath);
-        if (forwardPath.includes('src/')) {
-          console.log("Including file:", forwardPath);
+        if (forwardPath.includes('src/') || forwardPath.includes('public/')) {
           fileContentMap += `"${forwardPath}":\n`;
           fileContentMap += `// ${item.content}\n\n`;
         } else {
