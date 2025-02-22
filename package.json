@@ -11,7 +11,8 @@
   ],
   "activationEvents": [
     "onCommand:bettercontextoai",
-    "onCommand:extension.generateProjectSummary"
+    "onCommand:extension.generateProjectSummary",
+    "onCommand:extension.generateFileContentMap"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -23,6 +24,10 @@
       {
         "command": "extension.generateProjectSummary",
         "title": "Generate Project Summary"
+      },
+      {
+        "command": "extension.generateFileContentMap",
+        "title": "Generate File Content Map"
       }
     ]
   },
