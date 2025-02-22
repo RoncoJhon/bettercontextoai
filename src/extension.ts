@@ -9,7 +9,7 @@ import { join, normalize } from 'path';
 let conversation: Array<{ role: "user" | "assistant"; content: string }> = [];
 
 // Use your real key or environment variable
-const openai = new OpenAI({ apiKey: '...' });
+const openai = new OpenAI({ apiKey: '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' });
 
 // Helper function to get folder structure + file contents
 function getFolderStructure(folderPath: string, maxDepth = 2, currentDepth = 0): any {
@@ -156,6 +156,19 @@ export function activate(context: vscode.ExtensionContext) {
         messages: conversation
       });
 
+      const completion = await openai.chat.completions.create({
+        model: "o3-mini",
+        reasoning_effort: "medium",
+        messages: [
+          {
+            role: "user", 
+            content: 'What is the max input and the max ouput tokens of yours?'
+          }
+        ],
+        store: true,
+      });
+      
+      console.log(completion.choices[0].message.content);
       const assistantReply = response.choices[0]?.message?.content ?? '';
       // Add assistant reply to conversation
       conversation.push({ role: "assistant", content: assistantReply });
