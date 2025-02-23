@@ -3,6 +3,20 @@ import { readdirSync, lstatSync, readFileSync, writeFileSync, existsSync } from 
 import { join, normalize, dirname } from 'path';
 
 /**
+ * Helper function to filter out paths that are descendants of another selected path.
+ */
+function filterSelectedPaths(paths: string[]): string[] {
+    // Normalize paths to use forward slashes for consistency.
+    const normalized = paths.map(p => normalize(p).replace(/\\/g, "/"));
+    return normalized.filter((path) => {
+        // Exclude the path if any other path is a proper prefix.
+        return !normalized.some(otherPath =>
+            otherPath !== path && path.startsWith(otherPath + "/")
+        );
+    });
+}
+
+/**
  * Custom TreeItem representing a file or folder in the workspace.
  */
 class FileTreeItem extends vscode.TreeItem {
@@ -311,8 +325,11 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        // Build the folder structure (with file contents) from the selected paths.
-        const structure = getFolderStructureForSelectedPaths(selectedPaths, 2);
+        // Filter out any paths that are descendants of another selected path.
+        const filteredPaths = filterSelectedPaths(selectedPaths);
+
+        // Build the folder structure (with file contents) from the filtered paths.
+        const structure = getFolderStructureForSelectedPaths(filteredPaths, 2);
 
         let fileContentMap = "";
 
@@ -332,14 +349,8 @@ export function activate(context: vscode.ExtensionContext) {
         }
         buildFileContentMap(structure);
 
-        // Choose an output folder: either the first selected folder or fallback to the workspace root.
-        const outputFolder = selectedPaths.find(p => {
-            try {
-                return lstatSync(p).isDirectory();
-            } catch (err) {
-                return false;
-            }
-        }) || rootPath;
+        // Always use the workspace root as the output folder.
+        const outputFolder = rootPath;
 
         const mdPath = join(outputFolder, "FILE_CONTENT_MAP.md");
         writeFileSync(mdPath, fileContentMap, "utf8");
