@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { readdirSync, lstatSync, readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, normalize, extname } from 'path';
+import { join, normalize, extname, dirname } from 'path';
 
 /**
  * Custom TreeItem representing a file or folder in the workspace.
@@ -34,7 +34,7 @@ class FileTreeItem extends vscode.TreeItem {
 
 /**
  * TreeDataProvider that scans the workspace root folder and builds a tree view.
- * It also maintains a map of selection states keyed by full file/folder path.
+ * It maintains a map of selection states keyed by full file/folder path.
  */
 class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<FileTreeItem | undefined | null | void> = new vscode.EventEmitter<FileTreeItem | undefined | null | void>();
@@ -74,11 +74,57 @@ class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem> {
     }
 
     /**
+     * Recursively set selection state for a folder and all its children.
+     */
+    setSelectionRecursive(path: string, state: boolean) {
+        this.selectionMap.set(path, state);
+        try {
+            if (lstatSync(path).isDirectory()) {
+                const items = readdirSync(path);
+                for (const item of items) {
+                    const fullPath = join(path, item);
+                    this.setSelectionRecursive(fullPath, state);
+                }
+            }
+        } catch (err) {
+            // Ignore errors (e.g. permission issues)
+        }
+    }
+
+    /**
+     * Propagate unselection upward: if an item is unselected, then mark its parent as unselected.
+     */
+    updateParentSelection(path: string) {
+        const parent = dirname(path);
+        // Stop if we've reached the top or if parent is the same as path.
+        if (!parent || parent === path) {
+            return;
+        }
+        // Unselect the parent.
+        this.selectionMap.set(parent, false);
+        // Recursively update the parent's parent.
+        this.updateParentSelection(parent);
+    }
+
+    /**
      * Toggle the selection state of the given item.
+     * - When selecting a folder, mark all its children as selected.
+     * - When unselecting any item, update its parent(s) to be unselected.
      */
     toggleSelection(item: FileTreeItem) {
         const current = this.selectionMap.get(item.fullPath) || false;
-        this.selectionMap.set(item.fullPath, !current);
+        const newState = !current;
+        // If selecting a folder, recursively mark all children.
+        if (item.isFolder && newState) {
+            this.setSelectionRecursive(item.fullPath, true);
+        } else {
+            // Set the new state for the item.
+            this.selectionMap.set(item.fullPath, newState);
+            // If unselecting (newState is false), update the parent selection.
+            if (!newState) {
+                this.updateParentSelection(item.fullPath);
+            }
+        }
         this.refresh();
     }
 
