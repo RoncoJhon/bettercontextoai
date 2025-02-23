@@ -16,6 +16,14 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "fileSelector",
+          "name": "File Selector"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "extension.bettercontextoai",
@@ -28,6 +36,10 @@
       {
         "command": "extension.generateFileContentMap",
         "title": "Generate File Content Map"
+      },
+      {
+        "command": "extension.toggleSelection",
+        "title": "Toggle File Selection"
       }
     ]
   },
