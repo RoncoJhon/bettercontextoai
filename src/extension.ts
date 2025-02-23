@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { readdirSync, lstatSync, readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, normalize, extname, dirname } from 'path';
+import { join, normalize, dirname } from 'path';
 
 /**
  * Custom TreeItem representing a file or folder in the workspace.
@@ -167,10 +167,9 @@ class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem> {
 }
 
 /**
- * Helper function to build a folder structure with file contents from a list of paths.
- * This logic largely mirrors your existing implementation.
+ * Helper function to traverse a folder (up to a given depth) and build its structure.
  */
-function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2): any {
+function traverseFolder(folderPath: string, maxDepth: number): any {
     const structure: any = {};
     const MAX_FILE_SIZE = 50 * 1024; // 50 KB
 
@@ -203,45 +202,76 @@ function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2): any 
         '.mov',
     ];
 
-    paths.forEach((folderPath) => {
-        try {
-            if (!existsSync(folderPath)) {
-                console.error("Folder does not exist:", folderPath);
-                return;
-            }
+    // If we've reached the maximum depth, stop traversing.
+    if (maxDepth <= 0) {
+        return structure;
+    }
 
-            const items = readdirSync(folderPath);
+    let items: string[];
+    try {
+        items = readdirSync(folderPath);
+    } catch (err) {
+        return structure;
+    }
 
-            for (const item of items) {
-                const itemPath = join(folderPath, item);
-                const stats = lstatSync(itemPath);
-                const itemHasABannedExtension = foldersAndFilesToAvoid.find((ext) => item.includes(ext));
-                // Skip ignored items
-                if (itemHasABannedExtension ||
-                    item.includes('test') ||
-                    item.includes('ignore') ||
-                    item.includes('.spec') ||
-                    item.includes('.md')) {
-                    continue;
+    for (const item of items) {
+        const itemPath = join(folderPath, item);
+        const stats = lstatSync(itemPath);
+        const banned = foldersAndFilesToAvoid.find(ext => item.includes(ext));
+        if (banned ||
+            item.includes('test') ||
+            item.includes('ignore') ||
+            item.includes('.spec') ||
+            item.includes('.md')) {
+            continue;
+        }
+        if (stats.isDirectory()) {
+            structure[item] = traverseFolder(itemPath, maxDepth - 1);
+        } else {
+            if (stats.size <= MAX_FILE_SIZE) {
+                try {
+                    const content = readFileSync(itemPath, 'utf8');
+                    structure[item] = { type: 'file', content, path: itemPath };
+                } catch (err) {
+                    structure[item] = { type: 'file', content: '[Error reading file]', path: itemPath };
                 }
-
-                if (stats.isDirectory()) {
-                    structure[item] = getFolderStructureForSelectedPaths([itemPath], maxDepth);
-                } else {
-                    if (stats.size <= MAX_FILE_SIZE) {
-                        try {
-                            const content = readFileSync(itemPath, 'utf8');
-                            structure[item] = { type: 'file', content, path: itemPath };
-                        } catch (err) {
-                            structure[item] = { type: 'file', content: '[Error reading file]', path: itemPath };
-                        }
-                    } else {
-                        structure[item] = { type: 'file', content: '[File too large, omitted]', path: itemPath };
-                    }
-                }
+            } else {
+                structure[item] = { type: 'file', content: '[File too large, omitted]', path: itemPath };
             }
-        } catch (err) {
-            console.error("Error reading directory:", folderPath, err);
+        }
+    }
+    return structure;
+}
+
+/**
+ * Helper function to build a folder structure with file contents from a list of paths.
+ * It now handles both directories and individual files.
+ */
+function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2): any {
+    const structure: any = {};
+    const MAX_FILE_SIZE = 50 * 1024; // 50 KB
+
+    paths.forEach((p) => {
+        if (!existsSync(p)) {
+            console.error("Path does not exist:", p);
+            return;
+        }
+        const stats = lstatSync(p);
+        // If the path is a directory, traverse it.
+        if (stats.isDirectory()) {
+            structure[p] = traverseFolder(p, maxDepth);
+        } else {
+            // For a file, read its content directly.
+            if (stats.size <= MAX_FILE_SIZE) {
+                try {
+                    const content = readFileSync(p, 'utf8');
+                    structure[p] = { type: 'file', content, path: p };
+                } catch (err) {
+                    structure[p] = { type: 'file', content: '[Error reading file]', path: p };
+                }
+            } else {
+                structure[p] = { type: 'file', content: '[File too large, omitted]', path: p };
+            }
         }
     });
 
@@ -303,9 +333,9 @@ export function activate(context: vscode.ExtensionContext) {
         buildFileContentMap(structure);
 
         // Choose an output folder: either the first selected folder or fallback to the workspace root.
-        const outputFolder = selectedPaths.find(path => {
+        const outputFolder = selectedPaths.find(p => {
             try {
-                return lstatSync(path).isDirectory();
+                return lstatSync(p).isDirectory();
             } catch (err) {
                 return false;
             }
