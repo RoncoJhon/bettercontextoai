@@ -123,18 +123,22 @@ class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem> {
     /**
      * Toggle the selection state of the given item.
      * - When selecting a folder, mark all its children as selected.
+     * - When unselecting a folder, mark all its children as unselected.
      * - When unselecting any item, update its parent(s) to be unselected.
      */
     toggleSelection(item: FileTreeItem) {
         const current = this.selectionMap.get(item.fullPath) || false;
         const newState = !current;
-        // If selecting a folder, recursively mark all children.
-        if (item.isFolder && newState) {
-            this.setSelectionRecursive(item.fullPath, true);
+        if (item.isFolder) {
+            // For folders, always set the state recursively for all children.
+            this.setSelectionRecursive(item.fullPath, newState);
+            // If unselecting, update parent selection.
+            if (!newState) {
+                this.updateParentSelection(item.fullPath);
+            }
         } else {
-            // Set the new state for the item.
+            // For files, simply update the state.
             this.selectionMap.set(item.fullPath, newState);
-            // If unselecting (newState is false), update the parent selection.
             if (!newState) {
                 this.updateParentSelection(item.fullPath);
             }
