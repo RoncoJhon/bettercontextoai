@@ -364,7 +364,13 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
 
-    context.subscriptions.push(toggleSelectionCommand, fileContentMapCommand, treeView);
+    // New command to refresh/rescan the file tree.
+    const refreshTreeCommand = vscode.commands.registerCommand('extension.refreshFileTree', () => {
+        fileSystemProvider.refresh();
+        vscode.window.showInformationMessage('File tree refreshed.');
+    });
+
+    context.subscriptions.push(toggleSelectionCommand, fileContentMapCommand, refreshTreeCommand, treeView);
 }
 
 /**

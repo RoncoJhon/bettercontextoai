@@ -40,6 +40,10 @@
       {
         "command": "extension.toggleSelection",
         "title": "Toggle File Selection"
+      },
+      {
+        "command": "extension.refreshFileTree",
+        "title": "Refresh File Tree"
       }
     ]
   },
