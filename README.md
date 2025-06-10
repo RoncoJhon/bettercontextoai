@@ -1,6 +1,9 @@
 # Better Context to AI
 
-Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once. Really useful if you use models with long context windows. My recommendation is Ai Studo from google.
+Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once. Really useful if you use models with long context windows. My recommendation is Ai Studo from google. 
+There's still work to be done, but I think it's useful, right? It might help a fellow developer.
+
+If you find this extension useful, please rate it on the [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ronco-jhon.better-context-to-ai&ssr=false#review-details). Your feedback helps us improve!
 
 ## Usage
 
@@ -42,6 +45,7 @@ This extension does not contribute any user-configurable settings.
 
 ## Release Notes
 
-### 1.0.0
+### 1.0.6
 
-- Initial release with file selection tree and content map generation.
+- Enriched instructions
+- No background extension icon
