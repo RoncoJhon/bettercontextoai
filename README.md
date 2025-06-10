@@ -13,7 +13,7 @@ If you find this extension useful, please rate it on the [Visual Studio Code Mar
 4. Run **Refresh File Tree** (`Ctrl+Shift+P` → `Refresh File Tree`) to clear and rescan selections. (No needed if file names or paths doesn't change)
 5. Copy the content of the `FILE_CONTENT_MAP.md` file and paste it into your AI chat.
 
-![Demo of Better Context to AI](./images/demo.gif)
+![Demo of Better Context to AI](https://github.com/RoncoJhon/bettercontextoai/raw/master/images/demo.gif)<!-- (./images/demo.gif) -->
 
 ## Requirements
 
