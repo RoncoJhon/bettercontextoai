@@ -1,53 +1,72 @@
-# bettercontextoai README
+# betterContextOAI
 
-This is the README for your extension "bettercontextoai". After writing up a brief description, we recommend including the following sections.
+Drastically improve context retention and awareness while using the OpenAI API on your local projects.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- Interactive **File Selector** tree view to pick files and folders for context
+- Toggle selection of items with check/circle icons
+<!-- - **Chat with OpenAI** directly from VS Code command palette -->
+- **Generate File Content Map** to produce a `FILE_CONTENT_MAP.md` with code snippets up to 50 KB
+- Automatic filtering to avoid nested or duplicate paths
+- **Refresh File Tree** to rescan workspace selections
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Visual Studio Code **≥ 1.97.0**
+- Node.js **≥ 16.x** (for building)
+<!-- - An **OpenAI API key** (set via the `OPENAI_API_KEY` environment variable) -->
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/<YOUR_GITHUB_USERNAME>/bettercontextoai.git
+   cd bettercontextoai
+   ```
+2. Install dependencies and build:
+   ```bash
+   yarn install
+   yarn compile
+   ```
+3. Launch the extension in the VS Code Extension Development Host (press **F5**).
+4. (Optional) Package for Marketplace:
+   ```bash
+   vsce package
+   ```
+
+## Usage
+
+1. Open the **File Selector** view in the Explorer pane.
+2. Click on files or folders to **toggle selection**.
+<!-- 3. Run **Chat with OpenAI** (`Ctrl+Shift+P` → `Chat with OpenAI`) to start a chat session. -->
+3. Run **Generate File Content Map** (`Ctrl+Shift+P` → `Generate File Content Map`) to export `FILE_CONTENT_MAP.md` at the workspace root.
+4. Run **Refresh File Tree** (`Ctrl+Shift+P` → `Refresh File Tree`) to clear and rescan selections. (No needed if file names or paths doesn't change)
+
+## Commands
+
+| Command Identifier                    | Title                        |
+| ------------------------------------- | ---------------------------- |
+<!-- | `extension.bettercontextoai`           | Chat with OpenAI             | -->
+| `extension.generateProjectSummary`     | Generate Project Summary     |
+| `extension.generateFileContentMap`     | Generate File Content Map    |
+| `extension.toggleSelection`            | Toggle File Selection        |
+| `extension.refreshFileTree`            | Refresh File Tree            |
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+This extension does not contribute any user-configurable settings.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Large or binary files (>50 KB) are automatically omitted from the content map.
+- Files and folders containing `test`, `ignore`, or `.md` in their names are skipped.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
+- Initial release with file selection tree<!-- , chat integration, --> and content map generation.
 
 ## Following extension guidelines
 
