@@ -12,7 +12,7 @@ Generate a file containing paths and contents of selected files or folders for e
 
 ## Requirements
 
-- Visual Studio Code **≥ 1.97.0**
+- Visual Studio Code **≥ 1.90.0**
 
 ## Supported Languages
 
