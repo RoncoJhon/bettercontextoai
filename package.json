@@ -6,12 +6,12 @@
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/<YOUR_GITHUB_USERNAME>/bettercontextoai.git"
+    "url": "https://github.com/RoncoJhon/bettercontextoai.git"
   },
   "bugs": {
-    "url": "https://github.com/<YOUR_GITHUB_USERNAME>/bettercontextoai/issues"
+    "url": "https://github.com/RoncoJhon/bettercontextoai/issues"
   },
-  "homepage": "https://github.com/<YOUR_GITHUB_USERNAME>/bettercontextoai#readme",
+  "homepage": "https://github.com/RoncoJhon/bettercontextoai#readme",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.97.0"

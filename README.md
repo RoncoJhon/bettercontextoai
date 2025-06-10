@@ -21,7 +21,7 @@ Drastically improve context retention and awareness while using the OpenAI API o
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<YOUR_GITHUB_USERNAME>/bettercontextoai.git
+   git clone https://github.com/RoncoJhon/bettercontextoai.git
    cd bettercontextoai
    ```
 2. Install dependencies and build:
