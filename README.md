@@ -1,37 +1,25 @@
 # betterContextOAI
 
-Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once.
+Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once. Really useful if you use models with long context windows. My recommendation is Ai Studo from google.
 
 ## Features
 
 - Interactive **File Selector** tree view to pick files and folders for context
 - Toggle selection of items with check/circle icons
-- **Generate File Content Map** to produce a `FILE_CONTENT_MAP.md` with code snippets up to 50 KB
+- **Generate File Content Map** to produce a `FILE_CONTENT_MAP.md` with code snippets, files over 50 KB, images and other binary files are automatically omitted
 - Automatic filtering to avoid nested or duplicate paths
-- **Refresh File Tree** to rescan workspace selections
+- **Refresh File Tree** to rescan workspace selections, just needed if file names or paths changes
 
 ## Requirements
 
 - Visual Studio Code **≥ 1.97.0**
-- Node.js **≥ 16.x** (for building)
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/RoncoJhon/bettercontextoai.git
-   cd bettercontextoai
-   ```
-2. Install dependencies and build:
-   ```bash
-   yarn install
-   yarn compile
-   ```
-3. Launch the extension in the VS Code Extension Development Host (press **F5**).
-4. (Optional) Package for Marketplace:
-   ```bash
-   vsce package
-   ```
+- Install from the VS Code Marketplace:
+  1. Open the Extensions view: `Ctrl+Shift+X`.
+  2. Search for `betterContextOAI`.
+  3. Click `Install`.
 
 ## Usage
 
