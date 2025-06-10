@@ -10,6 +10,8 @@ Generate a file containing paths and contents of selected files or folders for e
 4. Run **Refresh File Tree** (`Ctrl+Shift+P` → `Refresh File Tree`) to clear and rescan selections. (No needed if file names or paths doesn't change)
 5. Copy the content of the `FILE_CONTENT_MAP.md` file and paste it into your AI chat.
 
+![Demo of Better Context to AI](images/demo.gif)
+
 ## Requirements
 
 - Visual Studio Code **≥ 1.90.0**
