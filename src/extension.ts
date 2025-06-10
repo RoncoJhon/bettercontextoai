@@ -82,6 +82,8 @@ class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem> {
                 return new FileTreeItem(item, fullPath, collapsibleState, isFolder, selected);
             });
         } catch (err) {
+            // example err
+            
             console.error(err);
         }
         return Promise.resolve(children);
