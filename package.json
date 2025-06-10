@@ -1,7 +1,7 @@
 {
-  "name": "bettercontextoai",
+  "name": "better-context-to-ai",
   "publisher": "ronco-jhon",
-  "displayName": "betterContextOAI",
+  "displayName": "Better Context to AI",
   "description": "Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once.",
   "icon": "images/icon.png",
   "repository": {

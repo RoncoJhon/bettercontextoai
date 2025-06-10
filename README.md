@@ -1,4 +1,4 @@
-# betterContextOAI
+# Better Context to AI
 
 Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once. Really useful if you use models with long context windows. My recommendation is Ai Studo from google.
 
