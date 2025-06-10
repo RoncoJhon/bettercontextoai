@@ -1,12 +1,11 @@
 # betterContextOAI
 
-Drastically improve context retention and awareness while using the OpenAI API on your local projects.
+Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once.
 
 ## Features
 
 - Interactive **File Selector** tree view to pick files and folders for context
 - Toggle selection of items with check/circle icons
-<!-- - **Chat with OpenAI** directly from VS Code command palette -->
 - **Generate File Content Map** to produce a `FILE_CONTENT_MAP.md` with code snippets up to 50 KB
 - Automatic filtering to avoid nested or duplicate paths
 - **Refresh File Tree** to rescan workspace selections
@@ -15,7 +14,6 @@ Drastically improve context retention and awareness while using the OpenAI API o
 
 - Visual Studio Code **≥ 1.97.0**
 - Node.js **≥ 16.x** (for building)
-<!-- - An **OpenAI API key** (set via the `OPENAI_API_KEY` environment variable) -->
 
 ## Installation
 
@@ -39,7 +37,6 @@ Drastically improve context retention and awareness while using the OpenAI API o
 
 1. Open the **File Selector** view in the Explorer pane.
 2. Click on files or folders to **toggle selection**.
-<!-- 3. Run **Chat with OpenAI** (`Ctrl+Shift+P` → `Chat with OpenAI`) to start a chat session. -->
 3. Run **Generate File Content Map** (`Ctrl+Shift+P` → `Generate File Content Map`) to export `FILE_CONTENT_MAP.md` at the workspace root.
 4. Run **Refresh File Tree** (`Ctrl+Shift+P` → `Refresh File Tree`) to clear and rescan selections. (No needed if file names or paths doesn't change)
 
@@ -47,8 +44,6 @@ Drastically improve context retention and awareness while using the OpenAI API o
 
 | Command Identifier                    | Title                        |
 | ------------------------------------- | ---------------------------- |
-<!-- | `extension.bettercontextoai`           | Chat with OpenAI             | -->
-| `extension.generateProjectSummary`     | Generate Project Summary     |
 | `extension.generateFileContentMap`     | Generate File Content Map    |
 | `extension.toggleSelection`            | Toggle File Selection        |
 | `extension.refreshFileTree`            | Refresh File Tree            |

@@ -2,7 +2,7 @@
   "name": "bettercontextoai",
   "publisher": "ronco-jhon",
   "displayName": "betterContextOAI",
-  "description": "Drastically improve context retention and awareness while using OpenAI API on your local projects",
+  "description": "Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once.",
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
@@ -20,9 +20,9 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:bettercontextoai",
-    "onCommand:extension.generateProjectSummary",
-    "onCommand:extension.generateFileContentMap"
+    "onCommand:extension.generateFileContentMap",
+    "onCommand:extension.toggleSelection",
+    "onCommand:extension.refreshFileTree"
   ],
   "main": "./dist/extension.js",
   "contributes": {
