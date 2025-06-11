@@ -60,7 +60,6 @@ This extension does not contribute any user-configurable settings.
 
 ## Release Notes
 
-### 1.0.6
+### 1.1.1
 
-- Enriched instructions
-- No background extension icon
+- Added MIT Licence
