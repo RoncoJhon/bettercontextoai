@@ -15,21 +15,16 @@ export function activate(context: vscode.ExtensionContext) {
         return;
     }
 
-    // Instantiate the file system provider for the tree view.
     const fileSystemProvider = new FileSystemProvider(rootPath);
 
-    // Create the tree view with the id 'fileSelector'.
     const treeView = vscode.window.createTreeView('fileSelector', {
-        treeDataProvider: fileSystemProvider,
-        showCollapseAll: true
+        treeDataProvider: fileSystemProvider
     });
 
-    // Command to toggle the selection state of a file/folder.
     const toggleSelectionCommand = vscode.commands.registerCommand('extension.toggleSelection', (item: FileTreeItem) => {
         fileSystemProvider.toggleSelection(item);
     });
 
-    // Command to generate a file content map from selected items.
     const fileContentMapCommand = vscode.commands.registerCommand('extension.generateFileContentMap', async () => {
         const selectedPaths = await fileSystemProvider.getSelectedItems();
         if (selectedPaths.length === 0) {
@@ -41,14 +36,15 @@ export function activate(context: vscode.ExtensionContext) {
         const structure = getFolderStructureForSelectedPaths(filteredPaths, 2);
         let fileContentMap = "";
 
-        // **FIX:** This function is now correctly nested inside the command handler, just like the original code.
         function buildFileContentMap(data: any) {
             for (const key in data) {
                 const item = data[key];
                 if (item && item.type === 'file' && item.path) {
                     const forwardPath = normalize(item.path).replace(/\\/g, "/");
-                    fileContentMap += `"${forwardPath}":\n`;
-                    fileContentMap += `// ${item.content}\n\n`;
+                    
+                    // THE LOGICAL FIX IS HERE:
+                    fileContentMap += `// "${forwardPath}":\n`; // Add comment to the path line
+                    fileContentMap += `${item.content}\n\n`;    // Add raw content without a comment
                 } else if (typeof item === 'object') {
                     buildFileContentMap(item);
                 }
@@ -64,7 +60,6 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
 
-    // New command to refresh/rescan the file tree.
     const refreshTreeCommand = vscode.commands.registerCommand('extension.refreshFileTree', () => {
         fileSystemProvider.refresh();
         vscode.window.showInformationMessage('File tree refreshed.');

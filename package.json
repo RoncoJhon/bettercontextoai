@@ -12,7 +12,7 @@
     "url": "https://github.com/RoncoJhon/bettercontextoai/issues"
   },
   "homepage": "https://github.com/RoncoJhon/bettercontextoai#readme",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "engines": {
     "vscode": "^1.90.0"
@@ -39,7 +39,8 @@
     "commands": [
       {
         "command": "extension.generateFileContentMap",
-        "title": "Generate File Content Map"
+        "title": "Generate File Content Map",
+        "icon": "$(zap)"
       },
       {
         "command": "extension.toggleSelection",
@@ -47,9 +48,24 @@
       },
       {
         "command": "extension.refreshFileTree",
-        "title": "Refresh File Tree"
+        "title": "Refresh File Tree",
+        "icon": "$(refresh)"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "extension.generateFileContentMap",
+          "when": "view == fileSelector",
+          "group": "navigation@1"
+        },
+        {
+          "command": "extension.refreshFileTree",
+          "when": "view == fileSelector",
+          "group": "navigation@2"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",
