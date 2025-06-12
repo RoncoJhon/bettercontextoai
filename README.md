@@ -22,11 +22,15 @@ There's still work to be done, but I think it's useful, right? It might help a f
 
 ## Usage
 
-1. Open the **File Selector** view in the Explorer pane.
-2. Click on files or folders to **toggle selection**.
-3. Run **Generate File Content Map** (`Ctrl+Shift+P` → `Generate File Content Map`) to export `FILE_CONTENT_MAP.md` at the workspace root.
-4. Run **Refresh File Tree** (`Ctrl+Shift+P` → `Refresh File Tree`) to clear and rescan selections. (No needed if file names or paths doesn't change)
-5. Copy the content of the `FILE_CONTENT_MAP.md` file and paste it into your AI chat.
+The entire workflow is managed directly from the "File Selector" view
+
+
+1.  Open the **File Selector** view in the Explorer pane.
+2.  Click on any file or folder to toggle its selection.
+3.  Click the **Generate** (⚡) icon in the view's title bar to create `FILE_CONTENT_MAP.md`.
+4.  Copy the content from the generated file and paste it into your AI chat.
+ 
+The view updates as you expand folders. For a full, immediate refresh of the entire tree, click the Refresh (🔃) icon.
 
 ![Demo of Better Context to AI](https://raw.githubusercontent.com/roncojon/justmedia/main/bettercontextoai-demo.gif)
 
@@ -40,26 +44,30 @@ All programming languages and file types supported by VS Code are fully supporte
 
 ## Features
 
-- Interactive **File Selector** tree view to pick files and folders for context
-- Toggle selection of items with check/circle icons
-- **Generate File Content Map** to produce a `FILE_CONTENT_MAP.md` with code snippets, files over 50 KB, images and other binary files are automatically omitted
-- Automatic filtering to avoid nested or duplicate paths
-- **Refresh File Tree** to rescan workspace selections, just needed if file names or paths changes
+-   Interactive **File Selector** tree view to pick files and folders for context
+-   Produce a `FILE_CONTENT_MAP.md` with code snippets, files over 50 KB, images and other binary files are automatically omitted
+-   **Automatic `.gitignore` Handling:** The extension will automatically add `FILE_CONTENT_MAP.md` to your project's `.gitignore` file to prevent it from being accidentally committed.
+-   Your generated `FILE_CONTENT_MAP.md` file is automatically hidden from the File Selector to reduce clutter.
+-   **Smart Filtering:** Intelligently avoids nested or duplicate paths when generating the map and omits large binaries, images, and other non-essential files to keep your context focused.
 
 ## Commands
 
-| Command Identifier                    | Title                        |
-| ------------------------------------- | ---------------------------- |
-| `extension.generateFileContentMap`    | Generate File Content Map    |
-| `extension.toggleSelection`           | Toggle File Selection        |
-| `extension.refreshFileTree`           | Refresh File Tree            |
+While the primary workflow uses the title bar icons, the following commands are also available in the Command Palette (`Ctrl+Shift+P`):
 
-## Extension Settings
+-   `Better Context to AI: Generate File Content Map`
+-   `Better Context to AI: Refresh File Tree`
 
-This extension does not contribute any user-configurable settings.
+## Requirements
+
+-   Visual Studio Code **≥ 1.90.0**
 
 ## Release Notes
 
-### 1.1.1
+### 1.2.0 (Latest)
+-   **New Feature:** Added Generate (⚡) and Refresh (🔃) icons to the view's title bar for an intuitive, one-click workflow.
+-   **New Feature:** Extension now automatically adds `FILE_CONTENT_MAP.md` to `.gitignore`.
+-   **Improvement:** The `FILE_CONTENT_MAP.md` file is now hidden from the File Selector tree view.
+-   Updated documentation to reflect new UI.
 
-- Added MIT Licence
+### 1.1.1
+-   Added MIT License.
