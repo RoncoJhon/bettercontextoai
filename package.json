@@ -2,7 +2,7 @@
   "name": "better-context-to-ai",
   "publisher": "ronco-jhon",
   "displayName": "Better Context to AI",
-  "description": "Generate a file containing paths and contents of selected files or folders for easy and cost-effective AI context sharing, copy-paste into your AI chat just once.",
+  "description": "Generate a file containing paths and contents of selected files or folders for easy AI context sharing, copy-paste into your AI chat just once.",
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
@@ -12,13 +12,30 @@
     "url": "https://github.com/RoncoJhon/bettercontextoai/issues"
   },
   "homepage": "https://github.com/RoncoJhon/bettercontextoai#readme",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "license": "MIT",
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
+    "Programming Languages",
     "Other"
+  ],
+  "keywords": [
+    "ai",
+    "context",
+    "llm",
+    "prompt",
+    "prompt engineering",
+    "chatgpt",
+    "gemini",
+    "claude",
+    "copilot",
+    "ai studio",
+    "context window",
+    "code context",
+    "better context for ai",
+    "better context"
   ],
   "activationEvents": [
     "onView:fileSelector",
