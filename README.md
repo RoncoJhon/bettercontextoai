@@ -3,12 +3,12 @@
 Easily take advantage of powerful web-based AI models with massive context capabilities from your local development environment
 
 ## The Problem
-- VS Code AI extensions often have **restrictive context limitations**
-- Web-based AI chats (ChatGPT, Claude, Gemini, Google's AI Studio) offer **better context windows** (Google's are my recommendations, mainly AI Studio), but require tedious **file-by-file copy-pasting**
-- You end up choosing between convenience (limited AI) or capability (manual work)
+-   🤏 VS Code AI extensions often have **restrictive context limitations**.
+-   📋 Web-based AI chats (ChatGPT, Claude, Gemini, Google's AI Studio) offer **better context windows** (Google's are my recommendations, mainly AI Studio), but require tedious **file-by-file copy-pasting**.
+-   🤔 You end up choosing between convenience (limited AI) or capability (manual work).
 
 ## The Solution
-Select multiple files and folders in VS Code, generate one comprehensive document with all paths and contents, then paste everything into your preferred web AI chat **in a single action**.
+Select multiple files and folders in VS Code 🖱️, generate one comprehensive document 📄, then paste everything into your preferred web AI chat 🤖 **in a single action**. 🚀
 
 ## Usage
 
@@ -25,10 +25,10 @@ The view updates as you expand folders. For a full, immediate refresh of the ent
 
 ## Why Use This?
 
-- **Escape context limitations**: Leverage web AI models with 100K+ tokens context window (some of them 1M+) instead of being stuck with sometimes limited VS Code extensions
-- **Save money**: Web AI chats are often **free or cheaper** than premium VS Code AI extensions - use them more effectively
-- **End copy-paste hell**: No more manually copying dozens of files one by one into chat windows. If you are working over the same files and you already selected them once, you can just use the command to regenerate the single file with the updated context you want to share.
-- **Best of both worlds**: This is not a substitute for your current AI coding agents or copilot, keep your familiar VS Code workflow while accessing the most powerful AI models available trough their webs
+-   🧠 **Escape context limitations**: Leverage web AI models with 100K+ tokens context window (some of them 1M+) instead of being stuck with sometimes limited VS Code extensions.
+-   💸 **Save money**: Web AI chats are often **free or cheaper** than premium VS Code AI extensions - use them more effectively.
+-   🚫 **End copy-paste hell**: No more manually copying dozens of files one by one into chat windows. If you are working over the same files and you already selected them once, you can just use the command to regenerate the single file with the updated context you want to share.
+-   🤝 **Best of both worlds**: This is not a substitute for your current AI coding agents or copilot, keep your familiar VS Code workflow while accessing the most powerful AI models available trough their webs.
 
 If you find this extension useful, please rate it on the [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ronco-jhon.better-context-to-ai&ssr=false#review-details). Your feedback helps us improve!
 There's still work to be done, but I think it's useful, right? It might help a fellow developer.
