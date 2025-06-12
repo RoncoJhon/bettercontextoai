@@ -10,6 +10,8 @@ Easily take advantage of powerful web-based AI models with massive context capab
 ## The Solution
 Select multiple files and folders in VS Code 🖱️, generate one comprehensive document 📄, then paste everything into your preferred web AI chat 🤖 **in a single action**. 🚀
 
+![Demo of Better Context to AI](https://raw.githubusercontent.com/roncojon/justmedia/main/bettercontextoai-demo.gif)
+
 ## Usage
 
 The entire workflow is managed directly from the "File Selector" view
@@ -20,8 +22,6 @@ The entire workflow is managed directly from the "File Selector" view
 4.  Copy the content from the generated file and paste it into your AI chat.
  
 The view updates as you expand folders. For a full, immediate refresh of the entire tree, click the Refresh (🔃) icon.
-
-![Demo of Better Context to AI](https://raw.githubusercontent.com/roncojon/justmedia/main/bettercontextoai-demo.gif)
 
 ## Why Use This?
 
@@ -58,7 +58,7 @@ While the primary workflow uses the title bar icons, the following commands are 
 
 ## Release Notes
 
-### 1.2.1 (Latest)
+### 1.2.2 (Latest)
 -   **New Feature:** Added Generate (⚡) and Refresh (🔃) icons to the view's title bar for an intuitive, one-click workflow.
 -   **New Feature:** Extension now automatically adds `FILE_CONTENT_MAP.md` to `.gitignore`.
 -   **Improvement:** The `FILE_CONTENT_MAP.md` file is now hidden from the File Selector tree view.
