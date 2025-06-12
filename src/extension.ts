@@ -17,8 +17,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     const fileSystemProvider = new FileSystemProvider(rootPath);
 
+    // Create the tree view without the 'Collapse All' button.
     const treeView = vscode.window.createTreeView('fileSelector', {
-        treeDataProvider: fileSystemProvider
+        treeDataProvider: fileSystemProvider,
+        showCollapseAll: true, 
     });
 
     const toggleSelectionCommand = vscode.commands.registerCommand('extension.toggleSelection', (item: FileTreeItem) => {
@@ -42,9 +44,9 @@ export function activate(context: vscode.ExtensionContext) {
                 if (item && item.type === 'file' && item.path) {
                     const forwardPath = normalize(item.path).replace(/\\/g, "/");
                     
-                    // THE LOGICAL FIX IS HERE:
-                    fileContentMap += `// "${forwardPath}":\n`; // Add comment to the path line
-                    fileContentMap += `${item.content}\n\n`;    // Add raw content without a comment
+                    // THE FIX IS HERE: Use a Markdown comment instead.
+                    fileContentMap += `<!-- "${forwardPath}": -->\n`; // Changed from // to <!-- ... -->
+                    fileContentMap += `${item.content}\n\n`;    
                 } else if (typeof item === 'object') {
                     buildFileContentMap(item);
                 }
