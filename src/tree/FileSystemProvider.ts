@@ -27,7 +27,8 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
         let children: FileTreeItem[] = [];
         try {
             const items = readdirSync(directory);
-            children = items.map(item => {
+            // Improvement #2: Filter out our generated file before mapping.
+            children = items.filter(item => item !== 'FILE_CONTENT_MAP.md').map(item => {
                 const fullPath = join(directory, item);
                 const stats = lstatSync(fullPath);
                 const isFolder = stats.isDirectory();
@@ -79,9 +80,6 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
 
     /**
      * Toggle the selection state of the given item.
-     * - When selecting a folder, mark all its children as selected.
-     * - When unselecting a folder, mark all its children as unselected.
-     * - When unselecting any item, update its parent(s) to be unselected.
      */
     toggleSelection(item: FileTreeItem) {
         const current = this.selectionMap.get(item.fullPath) || false;

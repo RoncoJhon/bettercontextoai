@@ -83,7 +83,7 @@ var FileSystemProvider = class {
     let children = [];
     try {
       const items = (0, import_fs.readdirSync)(directory);
-      children = items.map((item) => {
+      children = items.filter((item) => item !== "FILE_CONTENT_MAP.md").map((item) => {
         const fullPath = (0, import_path.join)(directory, item);
         const stats = (0, import_fs.lstatSync)(fullPath);
         const isFolder = stats.isDirectory();
@@ -125,9 +125,6 @@ var FileSystemProvider = class {
   }
   /**
    * Toggle the selection state of the given item.
-   * - When selecting a folder, mark all its children as selected.
-   * - When unselecting a folder, mark all its children as unselected.
-   * - When unselecting any item, update its parent(s) to be unselected.
    */
   toggleSelection(item) {
     const current = this.selectionMap.get(item.fullPath) || false;
@@ -282,12 +279,30 @@ function getFolderStructureForSelectedPaths(paths, maxDepth = 2) {
 }
 
 // src/extension.ts
+function ensureFileIsGitignored(rootPath, filename) {
+  const gitignorePath = (0, import_path3.join)(rootPath, ".gitignore");
+  if ((0, import_fs3.existsSync)(gitignorePath)) {
+    try {
+      const gitignoreContent = (0, import_fs3.readFileSync)(gitignorePath, "utf8");
+      const entries = gitignoreContent.split("\n").map((line) => line.trim());
+      if (!entries.includes(filename)) {
+        (0, import_fs3.appendFileSync)(gitignorePath, `
+
+# Added by Better Context to AI
+${filename}`);
+      }
+    } catch (err) {
+      console.error(`Better Context to AI: Failed to read or write to .gitignore:`, err);
+    }
+  }
+}
 function activate(context) {
   const rootPath = vscode3.workspace.workspaceFolders ? vscode3.workspace.workspaceFolders[0].uri.fsPath : "";
   if (!rootPath) {
     vscode3.window.showErrorMessage("No workspace folder found.");
     return;
   }
+  ensureFileIsGitignored(rootPath, "FILE_CONTENT_MAP.md");
   const fileSystemProvider = new FileSystemProvider(rootPath);
   const treeView = vscode3.window.createTreeView("fileSelector", {
     treeDataProvider: fileSystemProvider,

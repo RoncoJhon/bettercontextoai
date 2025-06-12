@@ -1,9 +1,33 @@
 import * as vscode from 'vscode';
-import { writeFileSync } from 'fs';
+import { writeFileSync, existsSync, readFileSync, appendFileSync } from 'fs';
 import { join, normalize } from 'path';
 import { FileSystemProvider } from './tree/FileSystemProvider';
 import { FileTreeItem } from './tree/FileTreeItem';
 import { filterSelectedPaths, getFolderStructureForSelectedPaths } from './utils/fileSystemUtils';
+
+/**
+ * Checks for a .gitignore file in the root of the workspace and ensures
+ * that the specified filename is included in it.
+ * @param rootPath The root path of the workspace.
+ * @param filename The filename to add to .gitignore.
+ */
+function ensureFileIsGitignored(rootPath: string, filename: string) {
+    const gitignorePath = join(rootPath, '.gitignore');
+    if (existsSync(gitignorePath)) {
+        try {
+            const gitignoreContent = readFileSync(gitignorePath, 'utf8');
+            // Check if the filename is already present on any line.
+            const entries = gitignoreContent.split('\n').map(line => line.trim());
+            if (!entries.includes(filename)) {
+                // If not present, append it to the file.
+                appendFileSync(gitignorePath, `\n\n# Added by Better Context to AI\n${filename}`);
+            }
+        } catch (err) {
+            console.error(`Better Context to AI: Failed to read or write to .gitignore:`, err);
+        }
+    }
+    // Note: We do not create a .gitignore if it doesn't exist, as this could be intrusive.
+}
 
 /**
  * Activates the extension.
@@ -15,9 +39,11 @@ export function activate(context: vscode.ExtensionContext) {
         return;
     }
 
+    // Improvement #1: Ensure our output file is in .gitignore
+    ensureFileIsGitignored(rootPath, 'FILE_CONTENT_MAP.md');
+
     const fileSystemProvider = new FileSystemProvider(rootPath);
 
-    // Create the tree view without the 'Collapse All' button.
     const treeView = vscode.window.createTreeView('fileSelector', {
         treeDataProvider: fileSystemProvider,
         showCollapseAll: true, 
@@ -43,9 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const item = data[key];
                 if (item && item.type === 'file' && item.path) {
                     const forwardPath = normalize(item.path).replace(/\\/g, "/");
-                    
-                    // THE FIX IS HERE: Use a Markdown comment instead.
-                    fileContentMap += `<!-- "${forwardPath}": -->\n`; // Changed from // to <!-- ... -->
+                    fileContentMap += `<!-- "${forwardPath}": -->\n`;
                     fileContentMap += `${item.content}\n\n`;    
                 } else if (typeof item === 'object') {
                     buildFileContentMap(item);
@@ -74,6 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
         treeView
     );
 }
+
 
 /**
  * Deactivate the extension.
