@@ -21,6 +21,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onView:fileSelector",
     "onCommand:extension.generateFileContentMap",
     "onCommand:extension.toggleSelection",
     "onCommand:extension.refreshFileTree"
