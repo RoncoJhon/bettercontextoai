@@ -13,20 +13,41 @@ import { filterSelectedPaths, getFolderStructureForSelectedPaths } from './utils
  */
 function ensureFileIsGitignored(rootPath: string, filename: string) {
     const gitignorePath = join(rootPath, '.gitignore');
-    if (existsSync(gitignorePath)) {
-        try {
-            const gitignoreContent = readFileSync(gitignorePath, 'utf8');
-            // Check if the filename is already present on any line.
+    
+    try {
+        let gitignoreContent = '';
+        let needsUpdate = false;
+        
+        // Read existing .gitignore if it exists
+        if (existsSync(gitignorePath)) {
+            gitignoreContent = readFileSync(gitignorePath, 'utf8');
+            // Check if the filename is already present on any line
             const entries = gitignoreContent.split('\n').map(line => line.trim());
             if (!entries.includes(filename)) {
-                // If not present, append it to the file.
-                appendFileSync(gitignorePath, `\n\n# Added by Better Context to AI\n${filename}`);
+                needsUpdate = true;
             }
-        } catch (err) {
-            console.error(`Better Context to AI: Failed to read or write to .gitignore:`, err);
+        } else {
+            // .gitignore doesn't exist, we need to create it
+            needsUpdate = true;
         }
+        
+        if (needsUpdate) {
+            const comment = '# Added by the extension Better Context To AI';
+            const newEntry = `\n${comment}\n${filename}`;
+            
+            if (gitignoreContent) {
+                // Append to existing content
+                appendFileSync(gitignorePath, newEntry);
+            } else {
+                // Create new .gitignore file
+                writeFileSync(gitignorePath, `${comment}\n${filename}`, 'utf8');
+            }
+            
+            console.log(`Better Context to AI: Added ${filename} to .gitignore`);
+        }
+    } catch (err) {
+        console.error(`Better Context to AI: Failed to read or write to .gitignore:`, err);
     }
-    // Note: We do not create a .gitignore if it doesn't exist, as this could be intrusive.
 }
 
 /**
