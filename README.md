@@ -1,6 +1,6 @@
 # Better Context to AI
 
-Easily take advantage of powerful web-based AI models with massive context capabilities from your local development environment
+Easily share your context with web-based AI models 
 
 ## The Problem
 -   🤏 VS Code AI extensions often have **restrictive context limitations**.
@@ -58,7 +58,7 @@ While the primary workflow uses the title bar icons, the following commands are 
 
 ## Release Notes
 
-### 1.2.0 (Latest)
+### 1.2.6 (Latest)
 -   **New Feature:** Added Generate (⚡) and Refresh (🔃) icons to the view's title bar for an intuitive, one-click workflow.
 -   **New Feature:** Extension now automatically adds `FILE_CONTENT_MAP.md` to `.gitignore`.
 -   **Improvement:** The `FILE_CONTENT_MAP.md` file is now hidden from the File Selector tree view.

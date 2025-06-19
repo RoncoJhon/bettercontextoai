@@ -7,3 +7,5 @@ node_modules
 FILE_CONTENT_MAP.md
 dist
 out
+extension.js
+extension.js.map
