@@ -12,8 +12,8 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
     readonly onDidChangeTreeData: vscode.Event<FileTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
     
     // New event emitter for selection changes
-    private _onDidChangeSelection: vscode.EventEmitter<string> = new vscode.EventEmitter<string>();
-    readonly onDidChangeSelection: vscode.Event<string> = this._onDidChangeSelection.event;
+    private _onDidChangeSelection: vscode.EventEmitter<string[]> = new vscode.EventEmitter<string[]>();
+    readonly onDidChangeSelection: vscode.Event<string[]> = this._onDidChangeSelection.event;
     
     private selectionMap: Map<string, boolean> = new Map();
 
@@ -21,6 +21,13 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
+    }
+
+    /**
+     * Emit selection change event with list of changed paths
+     */
+    private emitSelectionChange(changedPaths: string[]): void {
+        this._onDidChangeSelection.fire(changedPaths);
     }
 
     getTreeItem(element: FileTreeItem): vscode.TreeItem {
@@ -53,38 +60,56 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
     /**
      * Recursively set selection state for a folder and all its children.
      */
-    setSelectionRecursive(path: string, state: boolean) {
-        this.selectionMap.set(path, state);
-        // Emit selection change event
-        this._onDidChangeSelection.fire(path);
+    setSelectionRecursive(path: string, state: boolean): string[] {
+        const changedPaths: string[] = [];
+        
+        // Only add to changed paths if the state actually changes
+        const currentState = this.selectionMap.get(path) || false;
+        if (currentState !== state) {
+            this.selectionMap.set(path, state);
+            changedPaths.push(path);
+        }
+        
         try {
             if (lstatSync(path).isDirectory()) {
                 const items = readdirSync(path);
                 for (const item of items) {
                     const fullPath = join(path, item);
-                    this.setSelectionRecursive(fullPath, state);
+                    const childChanges = this.setSelectionRecursive(fullPath, state);
+                    changedPaths.push(...childChanges);
                 }
             }
         } catch (err) {
             // Ignore errors (e.g. permission issues)
         }
+        
+        return changedPaths;
     }
 
     /**
      * Propagate unselection upward: if an item is unselected, then mark its parent as unselected.
      */
-    updateParentSelection(path: string) {
+    updateParentSelection(path: string): string[] {
+        const changedPaths: string[] = [];
         const parent = dirname(path);
+        
         // Stop if we've reached the top or if parent is the same as path.
         if (!parent || parent === path) {
-            return;
+            return changedPaths;
         }
-        // Unselect the parent.
-        this.selectionMap.set(parent, false);
-        // Emit selection change event for parent
-        this._onDidChangeSelection.fire(parent);
+        
+        // Only unselect parent if it was previously selected
+        const currentState = this.selectionMap.get(parent) || false;
+        if (currentState) {
+            this.selectionMap.set(parent, false);
+            changedPaths.push(parent);
+        }
+        
         // Recursively update the parent's parent.
-        this.updateParentSelection(parent);
+        const parentChanges = this.updateParentSelection(parent);
+        changedPaths.push(...parentChanges);
+        
+        return changedPaths;
     }
 
     /**
@@ -93,23 +118,32 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
     toggleSelection(item: FileTreeItem) {
         const current = this.selectionMap.get(item.fullPath) || false;
         const newState = !current;
+        let changedPaths: string[] = [];
+        
         if (item.isFolder) {
             // For folders, always set the state recursively for all children.
-            this.setSelectionRecursive(item.fullPath, newState);
+            changedPaths = this.setSelectionRecursive(item.fullPath, newState);
             // If unselecting, update parent selection.
             if (!newState) {
-                this.updateParentSelection(item.fullPath);
+                const parentChanges = this.updateParentSelection(item.fullPath);
+                changedPaths.push(...parentChanges);
             }
         } else {
             // For files, simply update the state.
             this.selectionMap.set(item.fullPath, newState);
-            // Emit selection change event
-            this._onDidChangeSelection.fire(item.fullPath);
+            changedPaths.push(item.fullPath);
             if (!newState) {
-                this.updateParentSelection(item.fullPath);
+                const parentChanges = this.updateParentSelection(item.fullPath);
+                changedPaths.push(...parentChanges);
             }
         }
+        
         this.refresh();
+        
+        // Emit selection change event
+        if (changedPaths.length > 0) {
+            this.emitSelectionChange(changedPaths);
+        }
     }
 
     /**
@@ -118,23 +152,25 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
     toggleSelectionByPath(path: string) {
         const current = this.selectionMap.get(path) || false;
         const newState = !current;
+        let changedPaths: string[] = [];
         
         try {
             const stats = lstatSync(path);
             if (stats.isDirectory()) {
                 // For folders, always set the state recursively for all children.
-                this.setSelectionRecursive(path, newState);
+                changedPaths = this.setSelectionRecursive(path, newState);
                 // If unselecting, update parent selection.
                 if (!newState) {
-                    this.updateParentSelection(path);
+                    const parentChanges = this.updateParentSelection(path);
+                    changedPaths.push(...parentChanges);
                 }
             } else {
                 // For files, simply update the state.
                 this.selectionMap.set(path, newState);
-                // Emit selection change event
-                this._onDidChangeSelection.fire(path);
+                changedPaths.push(path);
                 if (!newState) {
-                    this.updateParentSelection(path);
+                    const parentChanges = this.updateParentSelection(path);
+                    changedPaths.push(...parentChanges);
                 }
             }
         } catch (err) {
@@ -142,6 +178,11 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
         }
         
         this.refresh();
+        
+        // Emit selection change event
+        if (changedPaths.length > 0) {
+            this.emitSelectionChange(changedPaths);
+        }
     }
 
     /**

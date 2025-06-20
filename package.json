@@ -44,8 +44,7 @@
     "onCommand:extension.generateFileContentMap",
     "onCommand:extension.toggleSelection",
     "onCommand:extension.refreshFileTree",
-    "onCommand:extension.selectForAIContext",
-    "onCommand:extension.unselectForAIContext"
+    "onCommand:extension.toggleSelectionFromExplorer"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -73,12 +72,8 @@
         "icon": "$(refresh)"
       },
       {
-        "command": "extension.selectForAIContext",
-        "title": "Select for AI Context"
-      },
-      {
-        "command": "extension.unselectForAIContext",
-        "title": "Unselect from AI Context"
+        "command": "extension.toggleSelectionFromExplorer",
+        "title": "Select/Unselect for AI Context"
       }
     ],
     "menus": {
@@ -96,13 +91,7 @@
       ],
       "explorer/context": [
         {
-          "command": "extension.selectForAIContext",
-          "when": "!aiContext.isSelected",
-          "group": "2_workspace"
-        },
-        {
-          "command": "extension.unselectForAIContext",
-          "when": "aiContext.isSelected",
+          "command": "extension.toggleSelectionFromExplorer",
           "group": "2_workspace"
         }
       ]
