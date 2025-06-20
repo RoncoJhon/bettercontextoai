@@ -112,10 +112,40 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('File tree refreshed.');
     });
 
+    // New command to toggle selection from Explorer context menu
+    const toggleSelectionFromExplorerCommand = vscode.commands.registerCommand('extension.toggleSelectionFromExplorer', async (uri: vscode.Uri) => {
+        if (!uri) {
+            vscode.window.showErrorMessage('No file or folder selected.');
+            return;
+        }
+
+        const filePath = uri.fsPath;
+        
+        // Toggle the selection in the file system provider
+        const wasSelected = fileSystemProvider.isSelected(filePath);
+        fileSystemProvider.toggleSelectionByPath(filePath);
+        
+        // Show the File Selector view if it's not visible
+        await vscode.commands.executeCommand('fileSelector.focus');
+        
+        // Try to reveal the item in the tree view
+        try {
+            await fileSystemProvider.revealItem(filePath, treeView);
+        } catch (err) {
+            console.log('Could not reveal item in tree view:', err);
+        }
+
+        // Show a message indicating the action
+        const action = wasSelected ? 'unselected' : 'selected';
+        const fileName = filePath.split(/[\\/]/).pop();
+        vscode.window.showInformationMessage(`${fileName} ${action} for AI context.`);
+    });
+
     context.subscriptions.push(
         toggleSelectionCommand,
         fileContentMapCommand,
         refreshTreeCommand,
+        toggleSelectionFromExplorerCommand,
         treeView
     );
 }

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { readdirSync, lstatSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, relative } from 'path';
 import { FileTreeItem } from './FileTreeItem';
 
 /**
@@ -99,6 +99,88 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
             }
         }
         this.refresh();
+    }
+
+    /**
+     * Toggle selection state by file path (for use from Explorer context menu).
+     */
+    toggleSelectionByPath(path: string) {
+        const current = this.selectionMap.get(path) || false;
+        const newState = !current;
+        
+        try {
+            const stats = lstatSync(path);
+            if (stats.isDirectory()) {
+                // For folders, always set the state recursively for all children.
+                this.setSelectionRecursive(path, newState);
+                // If unselecting, update parent selection.
+                if (!newState) {
+                    this.updateParentSelection(path);
+                }
+            } else {
+                // For files, simply update the state.
+                this.selectionMap.set(path, newState);
+                if (!newState) {
+                    this.updateParentSelection(path);
+                }
+            }
+        } catch (err) {
+            console.error('Error toggling selection for path:', path, err);
+        }
+        
+        this.refresh();
+    }
+
+    /**
+     * Check if a path is currently selected.
+     */
+    isSelected(path: string): boolean {
+        return this.selectionMap.get(path) || false;
+    }
+
+    /**
+     * Attempt to reveal an item in the tree view by expanding parent folders.
+     */
+    async revealItem(targetPath: string, treeView: vscode.TreeView<FileTreeItem>): Promise<void> {
+        // Get the relative path from root to target
+        const relativePath = relative(this.rootPath, targetPath);
+        const pathParts = relativePath.split(/[\\/]/);
+        
+        // Build the path step by step and try to find the tree item
+        let currentPath = this.rootPath;
+        let currentItem: FileTreeItem | undefined;
+        
+        for (let i = 0; i < pathParts.length; i++) {
+            currentPath = join(currentPath, pathParts[i]);
+            
+            // Get children at current level
+            const children = await this.getChildren(currentItem);
+            
+            // Find the item that matches our current path part
+            currentItem = children.find(child => child.fullPath === currentPath);
+            
+            if (!currentItem) {
+                break; // Can't find the path, stop trying
+            }
+            
+            // If this is not the last part and it's a folder, we need to expand it
+            if (i < pathParts.length - 1 && currentItem.isFolder) {
+                try {
+                    await treeView.reveal(currentItem, { expand: true, focus: false, select: false });
+                } catch (err) {
+                    // Ignore reveal errors
+                }
+            }
+        }
+        
+        // Finally, try to reveal and select the target item
+        if (currentItem) {
+            try {
+                await treeView.reveal(currentItem, { expand: false, focus: true, select: true });
+            } catch (err) {
+                // Ignore reveal errors
+            }
+        }
     }
 
     /**
