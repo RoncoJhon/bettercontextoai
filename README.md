@@ -58,7 +58,7 @@ While the primary workflow uses the title bar icons, the following commands are 
 
 ## Release Notes
 
-### 1.2.7 (Latest)
+### 1.2.8 (Latest)
 -   **New Feature:** Added option "Select/Unselect for AI Context" when right clicking a file or folder from the Explorer view.
 -   **New Feature:** Added Generate (⚡) and Refresh (🔃) icons to the view's title bar for an intuitive, one-click workflow.
 -   **New Feature:** Extension now automatically adds `FILE_CONTENT_MAP.md` to `.gitignore`.

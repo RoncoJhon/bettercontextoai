@@ -10,6 +10,11 @@ import { FileTreeItem } from './FileTreeItem';
 export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<FileTreeItem | undefined | null | void> = new vscode.EventEmitter<FileTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<FileTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+    
+    // New event emitter for selection changes
+    private _onDidChangeSelection: vscode.EventEmitter<string> = new vscode.EventEmitter<string>();
+    readonly onDidChangeSelection: vscode.Event<string> = this._onDidChangeSelection.event;
+    
     private selectionMap: Map<string, boolean> = new Map();
 
     constructor(private rootPath: string) { }
@@ -50,6 +55,8 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
      */
     setSelectionRecursive(path: string, state: boolean) {
         this.selectionMap.set(path, state);
+        // Emit selection change event
+        this._onDidChangeSelection.fire(path);
         try {
             if (lstatSync(path).isDirectory()) {
                 const items = readdirSync(path);
@@ -74,6 +81,8 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
         }
         // Unselect the parent.
         this.selectionMap.set(parent, false);
+        // Emit selection change event for parent
+        this._onDidChangeSelection.fire(parent);
         // Recursively update the parent's parent.
         this.updateParentSelection(parent);
     }
@@ -94,6 +103,8 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
         } else {
             // For files, simply update the state.
             this.selectionMap.set(item.fullPath, newState);
+            // Emit selection change event
+            this._onDidChangeSelection.fire(item.fullPath);
             if (!newState) {
                 this.updateParentSelection(item.fullPath);
             }
@@ -120,6 +131,8 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
             } else {
                 // For files, simply update the state.
                 this.selectionMap.set(path, newState);
+                // Emit selection change event
+                this._onDidChangeSelection.fire(path);
                 if (!newState) {
                     this.updateParentSelection(path);
                 }

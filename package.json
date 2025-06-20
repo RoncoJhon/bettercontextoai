@@ -12,7 +12,7 @@
     "url": "https://github.com/RoncoJhon/bettercontextoai/issues"
   },
   "homepage": "https://github.com/RoncoJhon/bettercontextoai#readme",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "license": "MIT",
   "engines": {
     "vscode": "^1.90.0"
@@ -44,7 +44,8 @@
     "onCommand:extension.generateFileContentMap",
     "onCommand:extension.toggleSelection",
     "onCommand:extension.refreshFileTree",
-    "onCommand:extension.toggleSelectionFromExplorer"
+    "onCommand:extension.selectForAIContext",
+    "onCommand:extension.unselectForAIContext"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -72,8 +73,12 @@
         "icon": "$(refresh)"
       },
       {
-        "command": "extension.toggleSelectionFromExplorer",
-        "title": "Select/Unselect for AI Context"
+        "command": "extension.selectForAIContext",
+        "title": "Select for AI Context"
+      },
+      {
+        "command": "extension.unselectForAIContext",
+        "title": "Unselect from AI Context"
       }
     ],
     "menus": {
@@ -91,7 +96,13 @@
       ],
       "explorer/context": [
         {
-          "command": "extension.toggleSelectionFromExplorer",
+          "command": "extension.selectForAIContext",
+          "when": "!aiContext.isSelected",
+          "group": "2_workspace"
+        },
+        {
+          "command": "extension.unselectForAIContext",
+          "when": "aiContext.isSelected",
           "group": "2_workspace"
         }
       ]
