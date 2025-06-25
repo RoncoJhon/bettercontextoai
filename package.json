@@ -12,7 +12,7 @@
     "url": "https://github.com/RoncoJhon/bettercontextoai/issues"
   },
   "homepage": "https://github.com/RoncoJhon/bettercontextoai#readme",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "license": "MIT",
   "engines": {
     "vscode": "^1.90.0"
