@@ -26,23 +26,23 @@ export class ExclusionManager {
         const relativePath = rootPath ? relative(rootPath, filePath) : filePath;
         const normalizedPath = relativePath.replace(/\\/g, '/');
         
-        // Check user-defined exclusions first
+        // Get user-defined exclusions
         const userPatterns = config.get<string[]>('excludePatterns', []);
         const userFolders = config.get<string[]>('excludeFolders', []);
         const userExtensions = config.get<string[]>('excludeExtensions', []);
         
         // Check against user patterns using minimatch-like logic
-        if (userPatterns.some(pattern => this.matchesPattern(normalizedPath, pattern))) {
+        if (userPatterns.length > 0 && userPatterns.some(pattern => this.matchesPattern(normalizedPath, pattern))) {
             return true;
         }
         
         // Check against user folders
-        if (isDirectory && userFolders.includes(fileName)) {
+        if (isDirectory && userFolders.length > 0 && userFolders.includes(fileName)) {
             return true;
         }
         
         // Check against user extensions
-        if (!isDirectory && userExtensions.includes(fileExt)) {
+        if (!isDirectory && userExtensions.length > 0 && userExtensions.includes(fileExt)) {
             return true;
         }
         

@@ -25,6 +25,8 @@ function traverseFolder(folderPath: string, maxDepth: number, rootPath: string =
     const config = vscode.workspace.getConfiguration('betterContextToAI');
     const MAX_FILE_SIZE = config.get<number>('maxFileSize', 51200); // User-configurable file size
 
+    console.log(`Traversing folder: ${folderPath} (depth: ${maxDepth})`);
+
     // If we've reached the maximum depth, stop traversing.
     if (maxDepth <= 0) {
         return structure;
@@ -34,6 +36,7 @@ function traverseFolder(folderPath: string, maxDepth: number, rootPath: string =
     try {
         items = readdirSync(folderPath);
     } catch (err) {
+        console.error(`Error reading directory ${folderPath}:`, err);
         return structure;
     }
 
@@ -43,15 +46,22 @@ function traverseFolder(folderPath: string, maxDepth: number, rootPath: string =
         try {
             stats = lstatSync(itemPath);
         } catch (err) {
+            console.error(`Error getting stats for ${itemPath}:`, err);
             continue; // Skip files we can't read
         }
         
         const isDirectory = stats.isDirectory();
         
-        // Use the new exclusion manager
-        if (ExclusionManager.shouldExclude(itemPath, isDirectory, rootPath)) {
+        // IMPORTANT: Use the exclusion manager here
+        console.log(`Checking item: ${item} at path: ${itemPath}`);
+        const shouldExclude = ExclusionManager.shouldExclude(itemPath, isDirectory, rootPath);
+        
+        if (shouldExclude) {
+            console.log(`SKIPPING ${item} - excluded by settings`);
             continue;
         }
+        
+        console.log(`INCLUDING ${item} - not excluded`);
         
         if (isDirectory) {
             structure[item] = traverseFolder(itemPath, maxDepth - 1, rootPath);
@@ -83,7 +93,12 @@ export function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2
     // Get workspace root for relative path calculations
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
 
+    console.log(`Building structure for paths:`, paths);
+    console.log(`Workspace root: ${workspaceRoot}`);
+
     paths.forEach((p) => {
+        console.log(`Processing path: ${p}`);
+        
         if (!existsSync(p)) {
             console.error("Path does not exist:", p);
             return;
@@ -98,11 +113,22 @@ export function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2
         }
         
         if (stats.isDirectory()) {
+            console.log(`${p} is a directory, checking if it should be excluded first...`);
+            
+            // FIXED: Check if the selected directory itself should be excluded BEFORE traversing
+            if (ExclusionManager.shouldExclude(p, true, workspaceRoot)) {
+                console.log(`EXCLUDING entire directory: ${p} - matches exclusion settings`);
+                return; // Don't include this directory at all
+            }
+            
+            console.log(`Directory ${p} is allowed, traversing...`);
             // If the path is a directory, traverse it.
             structure[p] = traverseFolder(p, maxDepth, workspaceRoot);
         } else {
+            console.log(`${p} is a file, checking exclusions...`);
             // Check if individual file should be excluded
             if (ExclusionManager.shouldExclude(p, false, workspaceRoot)) {
+                console.log(`EXCLUDING file: ${p}`);
                 return;
             }
             
