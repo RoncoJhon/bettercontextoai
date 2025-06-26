@@ -1,5 +1,7 @@
 import { readdirSync, lstatSync, readFileSync, existsSync } from 'fs';
 import { join, normalize, dirname } from 'path';
+import * as vscode from 'vscode';
+import { ExclusionManager } from './ExclusionManager';
 
 /**
  * Helper function to filter out paths that are descendants of another selected path.
@@ -18,38 +20,10 @@ export function filterSelectedPaths(paths: string[]): string[] {
 /**
  * Helper function to traverse a folder (up to a given depth) and build its structure.
  */
-function traverseFolder(folderPath: string, maxDepth: number): any {
+function traverseFolder(folderPath: string, maxDepth: number, rootPath: string = ''): any {
     const structure: any = {};
-    const MAX_FILE_SIZE = 50 * 1024; // 50 KB
-
-    // List of folders and file extensions to avoid
-    const foldersAndFilesToAvoid = [
-        '.git',
-        'node_modules',
-        'dist',
-        'build',
-        'yarn.lock',
-        'package-lock.json',
-        '.yarnrc',
-        '.pdf',
-        '.png',
-        '.exe',
-        '.ico',
-        '.txt',
-        '.zip',
-        '.tar',
-        '.gz',
-        '.jpg',
-        '.jpeg',
-        '.svg',
-        '.gif',
-        '.mp4',
-        '.mp3',
-        '.wav',
-        '.avi',
-        '.webm',
-        '.mov',
-    ];
+    const config = vscode.workspace.getConfiguration('betterContextToAI');
+    const MAX_FILE_SIZE = config.get<number>('maxFileSize', 51200); // User-configurable file size
 
     // If we've reached the maximum depth, stop traversing.
     if (maxDepth <= 0) {
@@ -65,17 +39,22 @@ function traverseFolder(folderPath: string, maxDepth: number): any {
 
     for (const item of items) {
         const itemPath = join(folderPath, item);
-        const stats = lstatSync(itemPath);
-        const banned = foldersAndFilesToAvoid.find(ext => item.includes(ext));
-        if (banned ||
-            item.includes('test') ||
-            item.includes('ignore') ||
-            item.includes('.spec') ||
-            item.includes('.md')) {
+        let stats;
+        try {
+            stats = lstatSync(itemPath);
+        } catch (err) {
+            continue; // Skip files we can't read
+        }
+        
+        const isDirectory = stats.isDirectory();
+        
+        // Use the new exclusion manager
+        if (ExclusionManager.shouldExclude(itemPath, isDirectory, rootPath)) {
             continue;
         }
-        if (stats.isDirectory()) {
-            structure[item] = traverseFolder(itemPath, maxDepth - 1);
+        
+        if (isDirectory) {
+            structure[item] = traverseFolder(itemPath, maxDepth - 1, rootPath);
         } else {
             if (stats.size <= MAX_FILE_SIZE) {
                 try {
@@ -98,18 +77,35 @@ function traverseFolder(folderPath: string, maxDepth: number): any {
  */
 export function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2): any {
     const structure: any = {};
-    const MAX_FILE_SIZE = 50 * 1024; // 50 KB
+    const config = vscode.workspace.getConfiguration('betterContextToAI');
+    const MAX_FILE_SIZE = config.get<number>('maxFileSize', 51200);
+
+    // Get workspace root for relative path calculations
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
 
     paths.forEach((p) => {
         if (!existsSync(p)) {
             console.error("Path does not exist:", p);
             return;
         }
-        const stats = lstatSync(p);
-        // If the path is a directory, traverse it.
+        
+        let stats;
+        try {
+            stats = lstatSync(p);
+        } catch (err) {
+            console.error("Cannot access path:", p, err);
+            return;
+        }
+        
         if (stats.isDirectory()) {
-            structure[p] = traverseFolder(p, maxDepth);
+            // If the path is a directory, traverse it.
+            structure[p] = traverseFolder(p, maxDepth, workspaceRoot);
         } else {
+            // Check if individual file should be excluded
+            if (ExclusionManager.shouldExclude(p, false, workspaceRoot)) {
+                return;
+            }
+            
             // For a file, read its content directly.
             if (stats.size <= MAX_FILE_SIZE) {
                 try {
@@ -126,4 +122,3 @@ export function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2
 
     return structure;
 }
-

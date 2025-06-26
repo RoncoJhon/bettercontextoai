@@ -47,56 +47,169 @@
     "onCommand:extension.toggleSelectionFromExplorer"
   ],
   "main": "./dist/extension.js",
-  "contributes": {
-    "views": {
-      "explorer": [
-        {
-          "id": "fileSelector",
-          "name": "File Selector"
+    "contributes": {
+      "configuration": {
+        "title": "Better Context to AI",
+        "properties": {
+          "betterContextToAI.excludePatterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "File patterns to exclude from AI context (e.g., '*.log', 'temp/**')",
+            "scope": "resource",
+            "examples": [
+              "*.log",
+              "temp/**",
+              "**/*.cache",
+              "build/**"
+            ]
+          },
+          "betterContextToAI.excludeFolders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Folder names to exclude from AI context",
+            "scope": "resource",
+            "examples": [
+              "coverage",
+              "__pycache__",
+              ".next",
+              "tmp"
+            ]
+          },
+          "betterContextToAI.excludeExtensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "File extensions to exclude from AI context (include the dot: .env, .key)",
+            "scope": "resource",
+            "examples": [
+              ".env",
+              ".key",
+              ".pem",
+              ".p12",
+              ".jks"
+            ]
+          },
+          "betterContextToAI.useDefaultExclusions": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether to use built-in exclusions (node_modules, .git, binary files, etc.)",
+            "scope": "resource"
+          },
+          "betterContextToAI.maxFileSize": {
+            "type": "number",
+            "default": 51200,
+            "description": "Maximum file size in bytes to include in context (default: 50KB)",
+            "scope": "resource",
+            "minimum": 1024,
+            "maximum": 1048576
+          },
+          "betterContextToAI.defaultExcludedFolders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [".git", "node_modules", "dist", "build", ".vscode", "out", "coverage", "__pycache__", ".next", ".nuxt"],
+            "description": "Default folders excluded from AI context (read-only reference)",
+            "scope": "resource",
+            "readOnly": true
+          },
+          "betterContextToAI.defaultExcludedExtensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [".pdf", ".png", ".exe", ".ico", ".zip", ".tar", ".gz", ".jpg", ".jpeg", ".svg", ".gif", ".mp4", ".mp3", ".wav", ".avi", ".webm", ".mov", ".dmg", ".deb", ".rpm", ".msi"],
+            "description": "Default file extensions excluded from AI context (read-only reference)",
+            "scope": "resource",
+            "readOnly": true
+          },
+          "betterContextToAI.defaultExcludedPatterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": ["**/test/**", "**/*.spec.*", "**/*.test.*", "**/ignore/**", "yarn.lock", "package-lock.json", ".yarnrc", "**/.DS_Store", "**/Thumbs.db", "**/*.tmp", "**/*.temp"],
+            "description": "Default file patterns excluded from AI context (read-only reference)",
+            "scope": "resource",
+            "readOnly": true
+          }
         }
-      ]
-    },
-    "commands": [
-      {
-        "command": "extension.generateFileContentMap",
-        "title": "Generate File Content Map",
-        "icon": "$(zap)"
       },
-      {
-        "command": "extension.toggleSelection",
-        "title": "Toggle File Selection"
+      "views": {
+        "explorer": [
+          {
+            "id": "fileSelector",
+            "name": "File Selector"
+          }
+        ]
       },
-      {
-        "command": "extension.refreshFileTree",
-        "title": "Refresh File Tree",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "extension.toggleSelectionFromExplorer",
-        "title": "Select/Unselect for AI Context"
-      }
-    ],
-    "menus": {
-      "view/title": [
+      "commands": [
         {
           "command": "extension.generateFileContentMap",
-          "when": "view == fileSelector",
-          "group": "navigation@1"
+          "title": "Generate File Content Map",
+          "icon": "$(zap)"
+        },
+        {
+          "command": "extension.toggleSelection",
+          "title": "Toggle File Selection"
         },
         {
           "command": "extension.refreshFileTree",
-          "when": "view == fileSelector",
-          "group": "navigation@2"
-        }
-      ],
-      "explorer/context": [
+          "title": "Refresh File Tree",
+          "icon": "$(refresh)"
+        },
+        {
+          "command": "extension.openSettings",
+          "title": "Open Settings",
+          "icon": "$(settings-gear)"
+        },
         {
           "command": "extension.toggleSelectionFromExplorer",
-          "group": "2_workspace"
+          "title": "Select/Unselect for AI Context"
+        },
+        {
+          "command": "extension.excludeFromAI",
+          "title": "Never Include in AI Context"
         }
-      ]
-    }
-  },
+      ],
+      "menus": {
+        "view/title": [
+          {
+            "command": "extension.generateFileContentMap",
+            "when": "view == fileSelector",
+            "group": "navigation@1"
+          },
+          {
+            "command": "extension.refreshFileTree",
+            "when": "view == fileSelector",
+            "group": "navigation@2"
+          },
+          {
+            "command": "extension.openSettings",
+            "when": "view == fileSelector",
+            "group": "navigation@3"
+          }
+        ],
+        "explorer/context": [
+          {
+            "command": "extension.toggleSelectionFromExplorer",
+            "group": "2_workspace"
+          },
+          {
+            "command": "extension.excludeFromAI",
+            "group": "2_workspace"
+          }
+        ]
+      }
+    },
   "scripts": {
     "vscode:prepublish": "yarn run package",
     "compile": "yarn run check-types && yarn run lint && node esbuild.js",

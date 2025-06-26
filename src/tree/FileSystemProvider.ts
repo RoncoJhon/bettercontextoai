@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { readdirSync, lstatSync } from 'fs';
 import { join, dirname, relative } from 'path';
 import { FileTreeItem } from './FileTreeItem';
+import { ExclusionManager } from '../utils/ExclusionManager';
 
 /**
  * TreeDataProvider that scans the workspace root folder and builds a tree view.
@@ -39,17 +40,32 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
         let children: FileTreeItem[] = [];
         try {
             const items = readdirSync(directory);
-            // Improvement #2: Filter out our generated file before mapping.
-            children = items.filter(item => item !== 'FILE_CONTENT_MAP.md').map(item => {
+            // FIXED: Only filter out FILE_CONTENT_MAP.md, but show everything else in tree view
+            // The ExclusionManager filtering happens only during file generation, not tree display
+            children = items.filter(item => {
+                // Always hide our generated file from the tree view
+                if (item === 'FILE_CONTENT_MAP.md') {
+                    return false;
+                }
+                
+                // Show everything else in the tree view so users can select what they want
+                // Exclusions only apply during actual file generation
+                return true;
+            }).map(item => {
                 const fullPath = join(directory, item);
-                const stats = lstatSync(fullPath);
-                const isFolder = stats.isDirectory();
-                const collapsibleState = isFolder
-                    ? vscode.TreeItemCollapsibleState.Collapsed
-                    : vscode.TreeItemCollapsibleState.None;
-                // Check if we have stored a selection state for this item
-                const selected = this.selectionMap.get(fullPath) || false;
-                return new FileTreeItem(item, fullPath, collapsibleState, isFolder, selected);
+                try {
+                    const stats = lstatSync(fullPath);
+                    const isFolder = stats.isDirectory();
+                    const collapsibleState = isFolder
+                        ? vscode.TreeItemCollapsibleState.Collapsed
+                        : vscode.TreeItemCollapsibleState.None;
+                    // Check if we have stored a selection state for this item
+                    const selected = this.selectionMap.get(fullPath) || false;
+                    return new FileTreeItem(item, fullPath, collapsibleState, isFolder, selected);
+                } catch (err) {
+                    // If we can't stat the file, create a basic item
+                    return new FileTreeItem(item, fullPath, vscode.TreeItemCollapsibleState.None, false, false);
+                }
             });
         } catch (err) {
             console.error(err);

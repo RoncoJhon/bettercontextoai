@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
-import { writeFileSync, existsSync, readFileSync, appendFileSync } from 'fs';
-import { join, normalize } from 'path';
+import { writeFileSync, existsSync, readFileSync, appendFileSync, lstatSync } from 'fs';
+import { join, normalize, basename } from 'path';
 import { FileSystemProvider } from './tree/FileSystemProvider';
 import { FileTreeItem } from './tree/FileTreeItem';
 import { filterSelectedPaths, getFolderStructureForSelectedPaths } from './utils/fileSystemUtils';
+import { ExclusionManager } from './utils/ExclusionManager';
 
 /**
  * File decoration provider to show visual indicators in Explorer view
@@ -153,9 +154,20 @@ export function activate(context: vscode.ExtensionContext) {
 
         const mdPath = join(rootPath, "FILE_CONTENT_MAP.md");
         writeFileSync(mdPath, fileContentMap, "utf8");
-        vscode.window.showInformationMessage(`Saved file content map to ${mdPath}`);
-        vscode.workspace.openTextDocument(mdPath).then(doc => {
-            vscode.window.showTextDocument(doc);
+        
+        // FIXED: First open the file automatically
+        const doc = await vscode.workspace.openTextDocument(mdPath);
+        await vscode.window.showTextDocument(doc);
+        
+        // FIXED: Then show the info message with exclusion summary
+        const exclusionSummary = ExclusionManager.getExclusionSummary();
+        vscode.window.showInformationMessage(
+            `FILE_CONTENT_MAP.md generated successfully! (${exclusionSummary})`,
+            'Settings'
+        ).then(selection => {
+            if (selection === 'Settings') {
+                ExclusionManager.openSettings();
+            }
         });
     });
 
@@ -164,7 +176,11 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('File tree refreshed.');
     });
 
-    // New command to toggle selection from Explorer context menu with smart text
+    // NEW: Settings command
+    const openSettingsCommand = vscode.commands.registerCommand('extension.openSettings', () => {
+        ExclusionManager.openSettings();
+    });
+
     const toggleSelectionFromExplorerCommand = vscode.commands.registerCommand('extension.toggleSelectionFromExplorer', async (uri: vscode.Uri) => {
         if (!uri) {
             vscode.window.showErrorMessage('No file or folder selected.');
@@ -193,11 +209,41 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(`${fileName} ${action} AI context.`);
     });
 
+    // NEW: Exclude from AI command
+    const excludeFromAICommand = vscode.commands.registerCommand('extension.excludeFromAI', async (uri: vscode.Uri) => {
+        if (!uri) {
+            vscode.window.showErrorMessage('No file or folder selected.');
+            return;
+        }
+
+        const filePath = uri.fsPath;
+        const stats = lstatSync(filePath);
+        const isDirectory = stats.isDirectory();
+        const fileName = basename(filePath);
+        
+        await ExclusionManager.addToExclusions(filePath, isDirectory);
+        
+        const itemType = isDirectory ? 'folder' : 'file';
+        vscode.window.showInformationMessage(
+            `${fileName} (${itemType}) will be excluded from AI context.`,
+            'Open Settings',
+            'Refresh Tree'
+        ).then(selection => {
+            if (selection === 'Open Settings') {
+                ExclusionManager.openSettings();
+            } else if (selection === 'Refresh Tree') {
+                fileSystemProvider.refresh();
+            }
+        });
+    });
+
     context.subscriptions.push(
         toggleSelectionCommand,
         fileContentMapCommand,
         refreshTreeCommand,
+        openSettingsCommand,          // NEW
         toggleSelectionFromExplorerCommand,
+        excludeFromAICommand,         // NEW
         decorationDisposable,
         selectionChangeListener,
         treeView
