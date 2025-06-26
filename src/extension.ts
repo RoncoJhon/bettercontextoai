@@ -176,9 +176,25 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('File tree refreshed.');
     });
 
-    // NEW: Settings command
+    // Settings command
     const openSettingsCommand = vscode.commands.registerCommand('extension.openSettings', () => {
         ExclusionManager.openSettings();
+    });
+
+    // NEW: Reset to defaults command
+    const resetToDefaultsCommand = vscode.commands.registerCommand('extension.resetToDefaults', async () => {
+        const result = await vscode.window.showWarningMessage(
+            'This will reset all Better Context to AI settings to their default values. Are you sure?',
+            { modal: true },
+            'Yes, Reset',
+            'Cancel'
+        );
+        
+        if (result === 'Yes, Reset') {
+            await ExclusionManager.resetToDefaults();
+            // Refresh the tree view to reflect changes
+            fileSystemProvider.refresh();
+        }
     });
 
     const toggleSelectionFromExplorerCommand = vscode.commands.registerCommand('extension.toggleSelectionFromExplorer', async (uri: vscode.Uri) => {
@@ -209,7 +225,6 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(`${fileName} ${action} AI context.`);
     });
 
-    // NEW: Exclude from AI command
     const excludeFromAICommand = vscode.commands.registerCommand('extension.excludeFromAI', async (uri: vscode.Uri) => {
         if (!uri) {
             vscode.window.showErrorMessage('No file or folder selected.');
@@ -241,9 +256,10 @@ export function activate(context: vscode.ExtensionContext) {
         toggleSelectionCommand,
         fileContentMapCommand,
         refreshTreeCommand,
-        openSettingsCommand,          // NEW
+        openSettingsCommand,
+        resetToDefaultsCommand,        // NEW
         toggleSelectionFromExplorerCommand,
-        excludeFromAICommand,         // NEW
+        excludeFromAICommand,
         decorationDisposable,
         selectionChangeListener,
         treeView
