@@ -1,20 +1,27 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
-assignees: ''
-
+name: Feature Request
+about: Suggest a new feature for the extension
+title: '[FEATURE] '
+labels: 'enhancement'
+assignees: 'RoncoJhon'
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## Feature Description
+A clear and concise description of the feature you'd like to see.
 
-**Describe the solution you'd like**
+## Problem or Use Case
+Describe the problem this feature would solve or the use case it would enable.
+
+## Proposed Solution
 A clear and concise description of what you want to happen.
 
-**Describe alternatives you've considered**
+## Alternative Solutions
 A clear and concise description of any alternative solutions or features you've considered.
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+## Additional Context
+Add any other context, mockups, or screenshots about the feature request here.
+
+## Priority
+- [ ] Low - Nice to have
+- [ ] Medium - Would improve workflow
+- [ ] High - Essential for productivity
