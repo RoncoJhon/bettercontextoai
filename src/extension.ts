@@ -102,9 +102,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Improvement #1: Ensure our output file is in .gitignore
     ensureFileIsGitignored(rootPath, 'FILE_CONTENT_MAP.md');
 
-    // Improvement #2: Ensure workspace settings are initialized
-    ExclusionManager.ensureWorkspaceSettings();
-
     const fileSystemProvider = new FileSystemProvider(rootPath);
 
     // Create and register the decoration provider
@@ -212,6 +209,22 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    // NEW: Clear workspace settings command
+    const clearWorkspaceSettingsCommand = vscode.commands.registerCommand('extension.clearWorkspaceSettings', async () => {
+        const result = await vscode.window.showWarningMessage(
+            'This will clear all workspace-specific settings, causing the extension to use your User Settings instead. Continue?',
+            { modal: true },
+            'Yes, Clear Workspace',
+            'Cancel'
+        );
+        
+        if (result === 'Yes, Clear Workspace') {
+            await ExclusionManager.clearWorkspaceSettings();
+            // Refresh the tree view to reflect changes
+            fileSystemProvider.refresh();
+        }
+    });
+
     const toggleSelectionFromExplorerCommand = vscode.commands.registerCommand('extension.toggleSelectionFromExplorer', async (uri: vscode.Uri) => {
         if (!uri) {
             vscode.window.showErrorMessage('No file or folder selected.');
@@ -271,10 +284,11 @@ export function activate(context: vscode.ExtensionContext) {
         toggleSelectionCommand,
         fileContentMapCommand,
         selectAllCommand,
-        unselectAllCommand,             // NEW
+        unselectAllCommand,
         refreshTreeCommand,
         openSettingsCommand,
         resetToDefaultsCommand,
+        clearWorkspaceSettingsCommand,     // NEW
         toggleSelectionFromExplorerCommand,
         excludeFromAICommand,
         decorationDisposable,
