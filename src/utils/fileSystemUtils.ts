@@ -1,5 +1,7 @@
 import { readdirSync, lstatSync, readFileSync, existsSync } from 'fs';
 import { join, normalize, dirname } from 'path';
+import * as vscode from 'vscode';
+import { ExclusionManager } from './ExclusionManager';
 
 /**
  * Helper function to filter out paths that are descendants of another selected path.
@@ -18,38 +20,12 @@ export function filterSelectedPaths(paths: string[]): string[] {
 /**
  * Helper function to traverse a folder (up to a given depth) and build its structure.
  */
-function traverseFolder(folderPath: string, maxDepth: number): any {
+function traverseFolder(folderPath: string, maxDepth: number, rootPath: string = ''): any {
     const structure: any = {};
-    const MAX_FILE_SIZE = 50 * 1024; // 50 KB
+    const config = vscode.workspace.getConfiguration('betterContextToAI');
+    const MAX_FILE_SIZE = config.get<number>('maxFileSize', 51200); // User-configurable file size
 
-    // List of folders and file extensions to avoid
-    const foldersAndFilesToAvoid = [
-        '.git',
-        'node_modules',
-        'dist',
-        'build',
-        'yarn.lock',
-        'package-lock.json',
-        '.yarnrc',
-        '.pdf',
-        '.png',
-        '.exe',
-        '.ico',
-        '.txt',
-        '.zip',
-        '.tar',
-        '.gz',
-        '.jpg',
-        '.jpeg',
-        '.svg',
-        '.gif',
-        '.mp4',
-        '.mp3',
-        '.wav',
-        '.avi',
-        '.webm',
-        '.mov',
-    ];
+    console.log(`Traversing folder: ${folderPath} (depth: ${maxDepth})`);
 
     // If we've reached the maximum depth, stop traversing.
     if (maxDepth <= 0) {
@@ -60,22 +36,35 @@ function traverseFolder(folderPath: string, maxDepth: number): any {
     try {
         items = readdirSync(folderPath);
     } catch (err) {
+        console.error(`Error reading directory ${folderPath}:`, err);
         return structure;
     }
 
     for (const item of items) {
         const itemPath = join(folderPath, item);
-        const stats = lstatSync(itemPath);
-        const banned = foldersAndFilesToAvoid.find(ext => item.includes(ext));
-        if (banned ||
-            item.includes('test') ||
-            item.includes('ignore') ||
-            item.includes('.spec') ||
-            item.includes('.md')) {
+        let stats;
+        try {
+            stats = lstatSync(itemPath);
+        } catch (err) {
+            console.error(`Error getting stats for ${itemPath}:`, err);
+            continue; // Skip files we can't read
+        }
+        
+        const isDirectory = stats.isDirectory();
+        
+        // IMPORTANT: Use the exclusion manager here
+        console.log(`Checking item: ${item} at path: ${itemPath}`);
+        const shouldExclude = ExclusionManager.shouldExclude(itemPath, isDirectory, rootPath);
+        
+        if (shouldExclude) {
+            console.log(`SKIPPING ${item} - excluded by settings`);
             continue;
         }
-        if (stats.isDirectory()) {
-            structure[item] = traverseFolder(itemPath, maxDepth - 1);
+        
+        console.log(`INCLUDING ${item} - not excluded`);
+        
+        if (isDirectory) {
+            structure[item] = traverseFolder(itemPath, maxDepth - 1, rootPath);
         } else {
             if (stats.size <= MAX_FILE_SIZE) {
                 try {
@@ -98,18 +87,51 @@ function traverseFolder(folderPath: string, maxDepth: number): any {
  */
 export function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2): any {
     const structure: any = {};
-    const MAX_FILE_SIZE = 50 * 1024; // 50 KB
+    const config = vscode.workspace.getConfiguration('betterContextToAI');
+    const MAX_FILE_SIZE = config.get<number>('maxFileSize', 51200);
+
+    // Get workspace root for relative path calculations
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+
+    console.log(`Building structure for paths:`, paths);
+    console.log(`Workspace root: ${workspaceRoot}`);
 
     paths.forEach((p) => {
+        console.log(`Processing path: ${p}`);
+        
         if (!existsSync(p)) {
             console.error("Path does not exist:", p);
             return;
         }
-        const stats = lstatSync(p);
-        // If the path is a directory, traverse it.
+        
+        let stats;
+        try {
+            stats = lstatSync(p);
+        } catch (err) {
+            console.error("Cannot access path:", p, err);
+            return;
+        }
+        
         if (stats.isDirectory()) {
-            structure[p] = traverseFolder(p, maxDepth);
+            console.log(`${p} is a directory, checking if it should be excluded first...`);
+            
+            // FIXED: Check if the selected directory itself should be excluded BEFORE traversing
+            if (ExclusionManager.shouldExclude(p, true, workspaceRoot)) {
+                console.log(`EXCLUDING entire directory: ${p} - matches exclusion settings`);
+                return; // Don't include this directory at all
+            }
+            
+            console.log(`Directory ${p} is allowed, traversing...`);
+            // If the path is a directory, traverse it.
+            structure[p] = traverseFolder(p, maxDepth, workspaceRoot);
         } else {
+            console.log(`${p} is a file, checking exclusions...`);
+            // Check if individual file should be excluded
+            if (ExclusionManager.shouldExclude(p, false, workspaceRoot)) {
+                console.log(`EXCLUDING file: ${p}`);
+                return;
+            }
+            
             // For a file, read its content directly.
             if (stats.size <= MAX_FILE_SIZE) {
                 try {
@@ -126,4 +148,3 @@ export function getFolderStructureForSelectedPaths(paths: string[], maxDepth = 2
 
     return structure;
 }
-

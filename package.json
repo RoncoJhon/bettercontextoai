@@ -12,7 +12,7 @@
     "url": "https://github.com/RoncoJhon/bettercontextoai/issues"
   },
   "homepage": "https://github.com/RoncoJhon/bettercontextoai#readme",
-  "version": "1.2.9",
+  "version": "1.3.0",
   "license": "MIT",
   "engines": {
     "vscode": "^1.90.0"
@@ -48,6 +48,62 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Better Context to AI",
+      "properties": {
+        "betterContextToAI.excludeExtensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [".pdf", ".png", ".exe", ".ico", ".zip", ".tar", ".gz", ".jpg", ".jpeg", ".svg", ".gif", ".mp4", ".mp3", ".wav", ".avi", ".webm", ".mov", ".dmg", ".deb", ".rpm", ".msi"],
+          "markdownDescription": "**WORKSPACE SETTINGS OVERRIDE USER SETTINGS** - If configured in Workspace, User Settings will be ignored.\n\nFile extensions to exclude from AI context (include the dot: .env, .key)",
+          "scope": "resource",
+          "order": 1
+        },
+        "betterContextToAI.excludeFolders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [".git", "node_modules", "dist", "build", ".vscode", "out", "coverage", "__pycache__", ".next", ".nuxt"],
+          "markdownDescription": "**WORKSPACE SETTINGS OVERRIDE USER SETTINGS** - If configured in Workspace, User Settings will be ignored.\n\nFolder names to exclude from AI context",
+          "scope": "resource",
+          "order": 2
+        },
+        "betterContextToAI.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": ["**/test/**", "**/*.spec.*", "**/*.test.*", "**/ignore/**", "yarn.lock", "package-lock.json", ".yarnrc", "**/.DS_Store", "**/Thumbs.db", "**/*.tmp", "**/*.temp", "**/*.md"],
+          "markdownDescription": "**WORKSPACE SETTINGS OVERRIDE USER SETTINGS** - If configured in Workspace, User Settings will be ignored.\n\nFile patterns to exclude from AI context (e.g., '*.log', 'temp/**')",
+          "scope": "resource",
+          "order": 3
+        },
+        "betterContextToAI.maxFileSize": {
+          "type": "number",
+          "default": 51200,
+          "markdownDescription": "**WORKSPACE SETTINGS OVERRIDE USER SETTINGS** - If configured in Workspace, User Settings will be ignored.\n\nMaximum file size in bytes to include in context (default: 50KB)",
+          "scope": "resource",
+          "minimum": 0,
+          "maximum": 1048576,
+          "order": 4
+        },
+        "betterContextToAI.clearWorkspaceSettings": {
+          "type": "null",
+          "markdownDescription": "---\n\n**Clear Workspace Settings**\n\n[$(clear-all) Clear All Workspace Settings](command:extension.clearWorkspaceSettings)\n\n*This will remove all workspace-specific exclusion settings, causing the extension to use your User Settings instead.*",
+          "scope": "resource",
+          "order": 5
+        },
+        "betterContextToAI.resetToDefaults": {
+          "type": "null",
+          "markdownDescription": "---\n\n**Reset Settings**\n\n[$(refresh) Reset All Settings to Defaults](command:extension.resetToDefaults)\n\n*This will restore all exclusion settings to their original default values.*",
+          "scope": "resource",
+          "order": 6
+        }
+      }
+    },
     "views": {
       "explorer": [
         {
@@ -63,6 +119,16 @@
         "icon": "$(zap)"
       },
       {
+        "command": "extension.selectAll",
+        "title": "Select All Files",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "extension.unselectAll",
+        "title": "Unselect All Files",
+        "icon": "$(close-all)"
+      },
+      {
         "command": "extension.toggleSelection",
         "title": "Toggle File Selection"
       },
@@ -72,8 +138,27 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "extension.openSettings",
+        "title": "Open Settings",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "extension.resetToDefaults",
+        "title": "Reset to Defaults",
+        "category": "Better Context to AI"
+      },
+      {
+        "command": "extension.clearWorkspaceSettings",
+        "title": "Clear Workspace Settings",
+        "category": "Better Context to AI"
+      },
+      {
         "command": "extension.toggleSelectionFromExplorer",
         "title": "Select/Unselect for AI Context"
+      },
+      {
+        "command": "extension.excludeFromAI",
+        "title": "Never Include in AI Context"
       }
     ],
     "menus": {
@@ -84,14 +169,33 @@
           "group": "navigation@1"
         },
         {
-          "command": "extension.refreshFileTree",
+          "command": "extension.selectAll",
           "when": "view == fileSelector",
           "group": "navigation@2"
+        },
+        {
+          "command": "extension.unselectAll",
+          "when": "view == fileSelector",
+          "group": "navigation@3"
+        },
+        {
+          "command": "extension.refreshFileTree",
+          "when": "view == fileSelector",
+          "group": "navigation@4"
+        },
+        {
+          "command": "extension.openSettings",
+          "when": "view == fileSelector",
+          "group": "navigation@5"
         }
       ],
       "explorer/context": [
         {
           "command": "extension.toggleSelectionFromExplorer",
+          "group": "2_workspace"
+        },
+        {
+          "command": "extension.excludeFromAI",
           "group": "2_workspace"
         }
       ]

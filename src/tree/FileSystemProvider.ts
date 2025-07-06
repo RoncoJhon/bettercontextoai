@@ -39,17 +39,32 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
         let children: FileTreeItem[] = [];
         try {
             const items = readdirSync(directory);
-            // Improvement #2: Filter out our generated file before mapping.
-            children = items.filter(item => item !== 'FILE_CONTENT_MAP.md').map(item => {
+            // FIXED: Only filter out FILE_CONTENT_MAP.md, but show everything else in tree view
+            // The ExclusionManager filtering happens only during file generation, not tree display
+            children = items.filter(item => {
+                // Always hide our generated file from the tree view
+                if (item === 'FILE_CONTENT_MAP.md') {
+                    return false;
+                }
+                
+                // Show everything else in the tree view so users can select what they want
+                // Exclusions only apply during actual file generation
+                return true;
+            }).map(item => {
                 const fullPath = join(directory, item);
-                const stats = lstatSync(fullPath);
-                const isFolder = stats.isDirectory();
-                const collapsibleState = isFolder
-                    ? vscode.TreeItemCollapsibleState.Collapsed
-                    : vscode.TreeItemCollapsibleState.None;
-                // Check if we have stored a selection state for this item
-                const selected = this.selectionMap.get(fullPath) || false;
-                return new FileTreeItem(item, fullPath, collapsibleState, isFolder, selected);
+                try {
+                    const stats = lstatSync(fullPath);
+                    const isFolder = stats.isDirectory();
+                    const collapsibleState = isFolder
+                        ? vscode.TreeItemCollapsibleState.Collapsed
+                        : vscode.TreeItemCollapsibleState.None;
+                    // Check if we have stored a selection state for this item
+                    const selected = this.selectionMap.get(fullPath) || false;
+                    return new FileTreeItem(item, fullPath, collapsibleState, isFolder, selected);
+                } catch (err) {
+                    // If we can't stat the file, create a basic item
+                    return new FileTreeItem(item, fullPath, vscode.TreeItemCollapsibleState.None, false, false);
+                }
             });
         } catch (err) {
             console.error(err);
@@ -110,6 +125,86 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
         changedPaths.push(...parentChanges);
         
         return changedPaths;
+    }
+
+    /**
+     * Select all files and folders in the workspace
+     */
+    selectAll(): void {
+        console.log('Selecting all files and folders...');
+        const changedPaths: string[] = [];
+        
+        const selectRecursively = (dir: string) => {
+            let items: string[];
+            try {
+                items = readdirSync(dir);
+            } catch (err) {
+                console.error(`Error reading directory ${dir}:`, err);
+                return;
+            }
+            
+            for (const item of items) {
+                // Skip our generated file
+                if (item === 'FILE_CONTENT_MAP.md') {
+                    continue;
+                }
+                
+                const fullPath = join(dir, item);
+                let stats;
+                try {
+                    stats = lstatSync(fullPath);
+                } catch (err) {
+                    console.error(`Error getting stats for ${fullPath}:`, err);
+                    continue;
+                }
+                
+                // Select this item (we show everything in tree view, exclusions only apply during generation)
+                const currentState = this.selectionMap.get(fullPath) || false;
+                if (!currentState) {
+                    this.selectionMap.set(fullPath, true);
+                    changedPaths.push(fullPath);
+                }
+                
+                // If it's a directory, recurse into it
+                if (stats.isDirectory()) {
+                    selectRecursively(fullPath);
+                }
+            }
+        };
+        
+        selectRecursively(this.rootPath);
+        
+        console.log(`Selected ${changedPaths.length} items`);
+        this.refresh();
+        
+        // Emit selection change event
+        if (changedPaths.length > 0) {
+            this.emitSelectionChange(changedPaths);
+        }
+    }
+
+    /**
+     * Unselect all files and folders in the workspace
+     */
+    unselectAll(): void {
+        console.log('Unselecting all files and folders...');
+        const changedPaths: string[] = [];
+        
+        // Get all currently selected paths and unselect them
+        for (const [path, isSelected] of this.selectionMap.entries()) {
+            if (isSelected) {
+                this.selectionMap.set(path, false);
+                changedPaths.push(path);
+            }
+        }
+        
+        console.log(`Unselected ${changedPaths.length} items`);
+        this.refresh();
+        
+        // Emit selection change event
+        if (changedPaths.length > 0) {
+            this.emitSelectionChange(changedPaths);
+        }
     }
 
     /**

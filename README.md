@@ -68,7 +68,10 @@ While the primary workflow uses the title bar icons, the following commands are 
 
 ## Release Notes
 
-### 1.2.9 (Latest)
+### 1.3.0 (Latest)
+-   **New Feature:** Added "Select/Unselect for AI Context" option in the Explorer context menu.
+-   **New Feature:** Added Settings to Exclude specific file patterns, folders or file extensions from AI context.
+### 1.2.9
 -   **New Feature:** Added visual indicators (✓) in Explorer view to show which files/folders are selected for AI context.
 -   **New Feature:** Added option "Select/Unselect for AI Context" when right clicking a file or folder from the Explorer view.
 -   **New Feature:** Added Generate (⚡) and Refresh (🔃) icons to the view's title bar for an intuitive, one-click workflow.
