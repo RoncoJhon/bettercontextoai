@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { basename, extname, relative, sep } from 'path';
+import { basename, extname, relative } from 'path';
 
 export class ExclusionManager {
     // Default values - these will be used to reset settings
@@ -11,11 +11,31 @@ export class ExclusionManager {
     };
 
     /**
+     * Get the effective configuration value, properly handling defaults
+     */
+    private static getEffectiveConfig<T>(key: string, defaultValue: T): T {
+        const config = vscode.workspace.getConfiguration('betterContextToAI');
+        
+        // Get the value from workspace/user settings
+        const configValue = config.get<T>(key);
+        
+        // If the config value exists and is not empty, use it
+        if (configValue !== undefined && configValue !== null) {
+            // For arrays, check if it's empty
+            if (Array.isArray(configValue) && configValue.length === 0) {
+                return defaultValue;
+            }
+            return configValue;
+        }
+        
+        // Fallback to default value
+        return defaultValue;
+    }
+
+    /**
      * Check if a file/folder should be excluded based on user settings
      */
     static shouldExclude(filePath: string, isDirectory: boolean, rootPath: string = ''): boolean {
-        const config = vscode.workspace.getConfiguration('betterContextToAI');
-        
         const fileName = basename(filePath);
         const fileExt = extname(filePath);
         
@@ -24,10 +44,10 @@ export class ExclusionManager {
         // Always use forward slashes for consistency
         const normalizedPath = relativePath.replace(/\\/g, '/');
         
-        // Get user-defined exclusions (these now include defaults)
-        const userPatterns = config.get<string[]>('excludePatterns', this.DEFAULT_VALUES.excludePatterns);
-        const userFolders = config.get<string[]>('excludeFolders', this.DEFAULT_VALUES.excludeFolders);
-        const userExtensions = config.get<string[]>('excludeExtensions', this.DEFAULT_VALUES.excludeExtensions);
+        // Get effective exclusions (with proper defaults)
+        const userPatterns = this.getEffectiveConfig('excludePatterns', this.DEFAULT_VALUES.excludePatterns);
+        const userFolders = this.getEffectiveConfig('excludeFolders', this.DEFAULT_VALUES.excludeFolders);
+        const userExtensions = this.getEffectiveConfig('excludeExtensions', this.DEFAULT_VALUES.excludeExtensions);
         
         // 1. Check against file extensions FIRST (most specific)
         if (!isDirectory && fileExt && userExtensions.includes(fileExt)) {
@@ -136,14 +156,15 @@ export class ExclusionManager {
     }
 
     /**
-     * Add a file or folder to exclusions
+     * Add a file or folder to exclusions - ensures workspace settings exist
      */
     static async addToExclusions(filePath: string, isDirectory: boolean): Promise<void> {
         const config = vscode.workspace.getConfiguration('betterContextToAI');
         const fileName = basename(filePath);
         
         if (isDirectory) {
-            const currentFolders = config.get<string[]>('excludeFolders', this.DEFAULT_VALUES.excludeFolders);
+            // Get current effective folders (with defaults)
+            const currentFolders = this.getEffectiveConfig('excludeFolders', this.DEFAULT_VALUES.excludeFolders);
             if (!currentFolders.includes(fileName)) {
                 await config.update('excludeFolders', [...currentFolders, fileName], 
                                  vscode.ConfigurationTarget.Workspace);
@@ -151,12 +172,44 @@ export class ExclusionManager {
         } else {
             const fileExt = extname(filePath);
             if (fileExt) {
-                const currentExtensions = config.get<string[]>('excludeExtensions', this.DEFAULT_VALUES.excludeExtensions);
+                // Get current effective extensions (with defaults)
+                const currentExtensions = this.getEffectiveConfig('excludeExtensions', this.DEFAULT_VALUES.excludeExtensions);
                 if (!currentExtensions.includes(fileExt)) {
                     await config.update('excludeExtensions', [...currentExtensions, fileExt], 
                                       vscode.ConfigurationTarget.Workspace);
                 }
             }
+        }
+    }
+
+    /**
+     * Ensure workspace settings are properly initialized with defaults
+     */
+    static async ensureWorkspaceSettings(): Promise<void> {
+        const config = vscode.workspace.getConfiguration('betterContextToAI');
+        
+        try {
+            // Check if workspace has any of our settings
+            const hasWorkspaceSettings = [
+                config.inspect('excludeExtensions')?.workspaceValue,
+                config.inspect('excludeFolders')?.workspaceValue,
+                config.inspect('excludePatterns')?.workspaceValue,
+                config.inspect('maxFileSize')?.workspaceValue
+            ].some(value => value !== undefined);
+            
+            // If no workspace settings exist, initialize them with defaults
+            if (!hasWorkspaceSettings) {
+                await Promise.all([
+                    config.update('excludeExtensions', this.DEFAULT_VALUES.excludeExtensions, vscode.ConfigurationTarget.Workspace),
+                    config.update('excludeFolders', this.DEFAULT_VALUES.excludeFolders, vscode.ConfigurationTarget.Workspace),
+                    config.update('excludePatterns', this.DEFAULT_VALUES.excludePatterns, vscode.ConfigurationTarget.Workspace),
+                    config.update('maxFileSize', this.DEFAULT_VALUES.maxFileSize, vscode.ConfigurationTarget.Workspace)
+                ]);
+                
+                console.log('Better Context to AI: Initialized workspace settings with defaults');
+            }
+        } catch (error) {
+            console.error('Better Context to AI: Failed to initialize workspace settings:', error);
         }
     }
 
@@ -167,33 +220,17 @@ export class ExclusionManager {
         const config = vscode.workspace.getConfiguration('betterContextToAI');
         
         try {
-            // Try to reset both workspace and global settings to ensure it works
-            const resetPromises = [
-                // Reset workspace settings
+            // Reset workspace settings to defaults
+            await Promise.all([
                 config.update('excludeExtensions', this.DEFAULT_VALUES.excludeExtensions, vscode.ConfigurationTarget.Workspace),
                 config.update('excludeFolders', this.DEFAULT_VALUES.excludeFolders, vscode.ConfigurationTarget.Workspace),
                 config.update('excludePatterns', this.DEFAULT_VALUES.excludePatterns, vscode.ConfigurationTarget.Workspace),
-                config.update('maxFileSize', this.DEFAULT_VALUES.maxFileSize, vscode.ConfigurationTarget.Workspace),
-            ];
-            
-            // Also try to clear any global overrides by setting to undefined
-            const clearGlobalPromises = [
-                config.update('excludeExtensions', undefined, vscode.ConfigurationTarget.Global),
-                config.update('excludeFolders', undefined, vscode.ConfigurationTarget.Global),
-                config.update('excludePatterns', undefined, vscode.ConfigurationTarget.Global),
-                config.update('maxFileSize', undefined, vscode.ConfigurationTarget.Global),
-            ];
-            
-            await Promise.all([...resetPromises, ...clearGlobalPromises]);
+                config.update('maxFileSize', this.DEFAULT_VALUES.maxFileSize, vscode.ConfigurationTarget.Workspace)
+            ]);
             
             vscode.window.showInformationMessage(
-                'Better Context to AI settings have been reset to defaults.',
-                'Reload Window'
-            ).then(selection => {
-                if (selection === 'Reload Window') {
-                    vscode.commands.executeCommand('workbench.action.reloadWindow');
-                }
-            });
+                'Better Context to AI settings have been reset to defaults.'
+            );
             
         } catch (error) {
             console.error('Reset to defaults error:', error);
@@ -212,10 +249,9 @@ export class ExclusionManager {
      * Get current exclusion summary for display
      */
     static getExclusionSummary(): string {
-        const config = vscode.workspace.getConfiguration('betterContextToAI');
-        const patterns = config.get<string[]>('excludePatterns', []);
-        const folders = config.get<string[]>('excludeFolders', []);
-        const extensions = config.get<string[]>('excludeExtensions', []);
+        const patterns = this.getEffectiveConfig('excludePatterns', this.DEFAULT_VALUES.excludePatterns);
+        const folders = this.getEffectiveConfig('excludeFolders', this.DEFAULT_VALUES.excludeFolders);
+        const extensions = this.getEffectiveConfig('excludeExtensions', this.DEFAULT_VALUES.excludeExtensions);
         
         const totalCount = patterns.length + folders.length + extensions.length;
         return `${totalCount} exclusion rule${totalCount !== 1 ? 's' : ''} active`;

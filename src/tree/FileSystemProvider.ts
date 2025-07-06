@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { readdirSync, lstatSync } from 'fs';
 import { join, dirname, relative } from 'path';
 import { FileTreeItem } from './FileTreeItem';
-import { ExclusionManager } from '../utils/ExclusionManager';
 
 /**
  * TreeDataProvider that scans the workspace root folder and builds a tree view.
@@ -126,6 +125,86 @@ export class FileSystemProvider implements vscode.TreeDataProvider<FileTreeItem>
         changedPaths.push(...parentChanges);
         
         return changedPaths;
+    }
+
+    /**
+     * Select all files and folders in the workspace
+     */
+    selectAll(): void {
+        console.log('Selecting all files and folders...');
+        const changedPaths: string[] = [];
+        
+        const selectRecursively = (dir: string) => {
+            let items: string[];
+            try {
+                items = readdirSync(dir);
+            } catch (err) {
+                console.error(`Error reading directory ${dir}:`, err);
+                return;
+            }
+            
+            for (const item of items) {
+                // Skip our generated file
+                if (item === 'FILE_CONTENT_MAP.md') {
+                    continue;
+                }
+                
+                const fullPath = join(dir, item);
+                let stats;
+                try {
+                    stats = lstatSync(fullPath);
+                } catch (err) {
+                    console.error(`Error getting stats for ${fullPath}:`, err);
+                    continue;
+                }
+                
+                // Select this item (we show everything in tree view, exclusions only apply during generation)
+                const currentState = this.selectionMap.get(fullPath) || false;
+                if (!currentState) {
+                    this.selectionMap.set(fullPath, true);
+                    changedPaths.push(fullPath);
+                }
+                
+                // If it's a directory, recurse into it
+                if (stats.isDirectory()) {
+                    selectRecursively(fullPath);
+                }
+            }
+        };
+        
+        selectRecursively(this.rootPath);
+        
+        console.log(`Selected ${changedPaths.length} items`);
+        this.refresh();
+        
+        // Emit selection change event
+        if (changedPaths.length > 0) {
+            this.emitSelectionChange(changedPaths);
+        }
+    }
+
+    /**
+     * Unselect all files and folders in the workspace
+     */
+    unselectAll(): void {
+        console.log('Unselecting all files and folders...');
+        const changedPaths: string[] = [];
+        
+        // Get all currently selected paths and unselect them
+        for (const [path, isSelected] of this.selectionMap.entries()) {
+            if (isSelected) {
+                this.selectionMap.set(path, false);
+                changedPaths.push(path);
+            }
+        }
+        
+        console.log(`Unselected ${changedPaths.length} items`);
+        this.refresh();
+        
+        // Emit selection change event
+        if (changedPaths.length > 0) {
+            this.emitSelectionChange(changedPaths);
+        }
     }
 
     /**

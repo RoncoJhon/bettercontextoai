@@ -102,6 +102,9 @@ export function activate(context: vscode.ExtensionContext) {
     // Improvement #1: Ensure our output file is in .gitignore
     ensureFileIsGitignored(rootPath, 'FILE_CONTENT_MAP.md');
 
+    // Improvement #2: Ensure workspace settings are initialized
+    ExclusionManager.ensureWorkspaceSettings();
+
     const fileSystemProvider = new FileSystemProvider(rootPath);
 
     // Create and register the decoration provider
@@ -171,6 +174,18 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
 
+    // Select All command
+    const selectAllCommand = vscode.commands.registerCommand('extension.selectAll', () => {
+        fileSystemProvider.selectAll();
+        vscode.window.showInformationMessage('All files and folders selected for AI context.');
+    });
+
+    // Unselect All command
+    const unselectAllCommand = vscode.commands.registerCommand('extension.unselectAll', () => {
+        fileSystemProvider.unselectAll();
+        vscode.window.showInformationMessage('All files and folders unselected from AI context.');
+    });
+
     const refreshTreeCommand = vscode.commands.registerCommand('extension.refreshFileTree', () => {
         fileSystemProvider.refresh();
         vscode.window.showInformationMessage('File tree refreshed.');
@@ -181,7 +196,7 @@ export function activate(context: vscode.ExtensionContext) {
         ExclusionManager.openSettings();
     });
 
-    // NEW: Reset to defaults command
+    // Reset to defaults command
     const resetToDefaultsCommand = vscode.commands.registerCommand('extension.resetToDefaults', async () => {
         const result = await vscode.window.showWarningMessage(
             'This will reset all Better Context to AI settings to their default values. Are you sure?',
@@ -255,9 +270,11 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         toggleSelectionCommand,
         fileContentMapCommand,
+        selectAllCommand,
+        unselectAllCommand,             // NEW
         refreshTreeCommand,
         openSettingsCommand,
-        resetToDefaultsCommand,        // NEW
+        resetToDefaultsCommand,
         toggleSelectionFromExplorerCommand,
         excludeFromAICommand,
         decorationDisposable,
