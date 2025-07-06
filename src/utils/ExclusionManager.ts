@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { basename, extname, relative } from 'path';
+import { basename, extname, relative, sep } from 'path';
 
 export class ExclusionManager {
     // Default values - these will be used to reset settings
@@ -21,6 +21,7 @@ export class ExclusionManager {
         
         // Create relative path for pattern matching if rootPath is provided
         const relativePath = rootPath ? relative(rootPath, filePath) : filePath;
+        // Always use forward slashes for consistency
         const normalizedPath = relativePath.replace(/\\/g, '/');
         
         // Get user-defined exclusions (these now include defaults)
@@ -28,37 +29,110 @@ export class ExclusionManager {
         const userFolders = config.get<string[]>('excludeFolders', this.DEFAULT_VALUES.excludeFolders);
         const userExtensions = config.get<string[]>('excludeExtensions', this.DEFAULT_VALUES.excludeExtensions);
         
-        // Check against patterns using minimatch-like logic
-        if (userPatterns.length > 0 && userPatterns.some(pattern => this.matchesPattern(normalizedPath, pattern))) {
+        // 1. Check against file extensions FIRST (most specific)
+        if (!isDirectory && fileExt && userExtensions.includes(fileExt)) {
             return true;
         }
         
-        // Check against folders
-        if (isDirectory && userFolders.length > 0 && userFolders.includes(fileName)) {
-            return true;
+        // 2. Check against folder names (including nested folders)
+        if (isDirectory) {
+            // Check if the folder name itself is in the exclude list
+            if (userFolders.includes(fileName)) {
+                return true;
+            }
+            
+            // Also check if any parent folder in the path is excluded
+            const pathParts = normalizedPath.split('/');
+            for (const part of pathParts) {
+                if (part && userFolders.includes(part)) {
+                    return true;
+                }
+            }
         }
         
-        // Check against extensions
-        if (!isDirectory && userExtensions.length > 0 && userExtensions.includes(fileExt)) {
-            return true;
+        // 3. Check against patterns (most flexible)
+        for (const pattern of userPatterns) {
+            if (this.matchesPattern(normalizedPath, pattern)) {
+                return true;
+            }
+            
+            // Also check against the full filename for file-specific patterns
+            if (!isDirectory && this.matchesPattern(fileName, pattern)) {
+                return true;
+            }
         }
         
         return false;
     }
 
     /**
-     * Simple pattern matching (basic glob support)
+     * Improved pattern matching with proper glob support
      */
     private static matchesPattern(path: string, pattern: string): boolean {
+        try {
+            // Handle different types of patterns
+            
+            // 1. Exact filename match (e.g., "yarn.lock", "package-lock.json")
+            if (!pattern.includes('*') && !pattern.includes('/')) {
+                return basename(path) === pattern;
+            }
+            
+            // 2. Simple extension patterns (e.g., "*.md", "*.spec.*")
+            if (pattern.startsWith('*') && !pattern.includes('/')) {
+                return this.matchesSimplePattern(basename(path), pattern);
+            }
+            
+            // 3. Directory-based patterns (e.g., "**/test/**", "**/node_modules/**")
+            if (pattern.includes('**')) {
+                return this.matchesDirectoryPattern(path, pattern);
+            }
+            
+            // 4. Simple path patterns (e.g., "src/*.js")
+            return this.matchesSimplePattern(path, pattern);
+            
+        } catch (error) {
+            console.error(`Error in pattern matching: ${error}`);
+            return false;
+        }
+    }
+    
+    /**
+     * Match simple patterns like *.js, *.spec.*, etc.
+     */
+    private static matchesSimplePattern(path: string, pattern: string): boolean {
         // Convert glob pattern to regex
         const regexPattern = pattern
-            .replace(/\*\*/g, '.*')  // ** matches any path
-            .replace(/\*/g, '[^/]*') // * matches any characters except /
-            .replace(/\?/g, '.')     // ? matches single character
-            .replace(/\./g, '\\.');  // Escape dots
+            .replace(/\./g, '\\.')      // Escape dots first
+            .replace(/\*/g, '[^/]*');   // * matches any characters except /
         
         const regex = new RegExp(`^${regexPattern}$`);
         return regex.test(path);
+    }
+    
+    // /**
+    //  * Match directory-based patterns like **/test/**, **/node_modules/**
+    //  */
+    private static matchesDirectoryPattern(path: string, pattern: string): boolean {
+        // Handle patterns like **/folder/**
+        if (pattern.startsWith('**/') && pattern.endsWith('/**')) {
+            const folderName = pattern.slice(3, -3); // Remove **/ and /**
+            return path.split('/').includes(folderName);
+        }
+        
+        // Handle patterns like **/folder
+        if (pattern.startsWith('**/')) {
+            const suffix = pattern.slice(3);
+            return path.includes(suffix) || path.endsWith('/' + suffix);
+        }
+        
+        // Handle patterns like folder/**
+        if (pattern.endsWith('/**')) {
+            const prefix = pattern.slice(0, -3);
+            return path.startsWith(prefix + '/') || path === prefix;
+        }
+        
+        // Fallback to simple pattern matching
+        return this.matchesSimplePattern(path, pattern);
     }
 
     /**
@@ -93,13 +167,6 @@ export class ExclusionManager {
         const config = vscode.workspace.getConfiguration('betterContextToAI');
         
         try {
-            console.log('Starting reset to defaults...');
-            console.log('Current values before reset:');
-            console.log('- excludeExtensions:', config.get('excludeExtensions'));
-            console.log('- excludeFolders:', config.get('excludeFolders'));
-            console.log('- excludePatterns:', config.get('excludePatterns'));
-            console.log('- maxFileSize:', config.get('maxFileSize'));
-            
             // Try to reset both workspace and global settings to ensure it works
             const resetPromises = [
                 // Reset workspace settings
@@ -118,14 +185,6 @@ export class ExclusionManager {
             ];
             
             await Promise.all([...resetPromises, ...clearGlobalPromises]);
-            
-            console.log('Reset completed. New values:');
-            // Reload config to see updated values
-            const newConfig = vscode.workspace.getConfiguration('betterContextToAI');
-            console.log('- excludeExtensions:', newConfig.get('excludeExtensions'));
-            console.log('- excludeFolders:', newConfig.get('excludeFolders'));
-            console.log('- excludePatterns:', newConfig.get('excludePatterns'));
-            console.log('- maxFileSize:', newConfig.get('maxFileSize'));
             
             vscode.window.showInformationMessage(
                 'Better Context to AI settings have been reset to defaults.',
