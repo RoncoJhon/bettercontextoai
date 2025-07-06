@@ -171,6 +171,18 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
 
+    // Select All command
+    const selectAllCommand = vscode.commands.registerCommand('extension.selectAll', () => {
+        fileSystemProvider.selectAll();
+        vscode.window.showInformationMessage('All files and folders selected for AI context.');
+    });
+
+    // Unselect All command
+    const unselectAllCommand = vscode.commands.registerCommand('extension.unselectAll', () => {
+        fileSystemProvider.unselectAll();
+        vscode.window.showInformationMessage('All files and folders unselected from AI context.');
+    });
+
     const refreshTreeCommand = vscode.commands.registerCommand('extension.refreshFileTree', () => {
         fileSystemProvider.refresh();
         vscode.window.showInformationMessage('File tree refreshed.');
@@ -181,7 +193,7 @@ export function activate(context: vscode.ExtensionContext) {
         ExclusionManager.openSettings();
     });
 
-    // NEW: Reset to defaults command
+    // Reset to defaults command
     const resetToDefaultsCommand = vscode.commands.registerCommand('extension.resetToDefaults', async () => {
         const result = await vscode.window.showWarningMessage(
             'This will reset all Better Context to AI settings to their default values. Are you sure?',
@@ -192,6 +204,22 @@ export function activate(context: vscode.ExtensionContext) {
         
         if (result === 'Yes, Reset') {
             await ExclusionManager.resetToDefaults();
+            // Refresh the tree view to reflect changes
+            fileSystemProvider.refresh();
+        }
+    });
+
+    // NEW: Clear workspace settings command
+    const clearWorkspaceSettingsCommand = vscode.commands.registerCommand('extension.clearWorkspaceSettings', async () => {
+        const result = await vscode.window.showWarningMessage(
+            'This will clear all workspace-specific settings, causing the extension to use your User Settings instead. Continue?',
+            { modal: true },
+            'Yes, Clear Workspace',
+            'Cancel'
+        );
+        
+        if (result === 'Yes, Clear Workspace') {
+            await ExclusionManager.clearWorkspaceSettings();
             // Refresh the tree view to reflect changes
             fileSystemProvider.refresh();
         }
@@ -255,9 +283,12 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         toggleSelectionCommand,
         fileContentMapCommand,
+        selectAllCommand,
+        unselectAllCommand,
         refreshTreeCommand,
         openSettingsCommand,
-        resetToDefaultsCommand,        // NEW
+        resetToDefaultsCommand,
+        clearWorkspaceSettingsCommand,     // NEW
         toggleSelectionFromExplorerCommand,
         excludeFromAICommand,
         decorationDisposable,
